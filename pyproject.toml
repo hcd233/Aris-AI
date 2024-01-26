@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "alice-ai"
+version = "0.1.0"
+description = "An LLM ai application"
+authors = ["centonhuang", "freshsaltedfish"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.11"
+loguru = "^0.7.2"
+fastapi = "^0.109.0"
+uvicorn = "^0.27.0"
+langchain = "^0.1.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
