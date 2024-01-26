@@ -1,0 +1,6 @@
+# Dirs
+.vscode
+__pycache__
+# Files
+*.env
+*.log
