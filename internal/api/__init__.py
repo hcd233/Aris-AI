@@ -19,5 +19,5 @@ def create_app() -> FastAPI:
     # add routers
     app.include_router(root_router)
 
-    logger.info("App initialized")
+    logger.info("app initialized")
     return app
