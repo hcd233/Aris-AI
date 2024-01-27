@@ -22,7 +22,7 @@ def init_logger() -> _Logger:
     _logger.add(log_root.joinpath(INFO_LOG), encoding="utf-8", rotation="10MB", enqueue=True, level="INFO", format=LOG_FORMAT)
     _logger.add(log_root.joinpath(ERROR_LOG), encoding="utf-8", rotation="10MB", enqueue=True, level="ERROR", format=LOG_FORMAT)
 
-    _logger.info("logger init success")
+    _logger.info("Init logger successfully")
 
     return _logger
 
