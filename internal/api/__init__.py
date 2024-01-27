@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from internal.config import DEBUG_MODE
 from internal.logger import logger
 
-from .router import root_router
+from .router import root_router, v1_router
 
 
 def create_app() -> FastAPI:
@@ -18,6 +18,8 @@ def create_app() -> FastAPI:
 
     # add routers
     app.include_router(root_router)
+    app.include_router(v1_router)
 
-    logger.info("app initialized")
+
+    logger.info("Init app successfully")
     return app
