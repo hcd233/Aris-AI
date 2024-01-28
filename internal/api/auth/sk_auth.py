@@ -12,7 +12,7 @@ async def sk_auth(
     bearer_auth: Optional[str] = Depends(bearer_scheme),
 ) -> int:
     with session() as conn:
-        query = conn.query(ApiKeySchema.uid).filter(ApiKeySchema.key == bearer_auth.credentials)
+        query = conn.query(ApiKeySchema.uid).filter(ApiKeySchema.api_key_secret == bearer_auth.credentials)
         result = query.first()
     if not result:
         raise HTTPException(
