@@ -20,6 +20,5 @@ def create_app() -> FastAPI:
     app.include_router(root_router)
     app.include_router(v1_router)
 
-
     logger.info("Init app successfully")
     return app
