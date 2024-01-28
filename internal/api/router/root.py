@@ -6,7 +6,7 @@ root_router = APIRouter(prefix="/root", tags=["root"])
 
 
 @root_router.get("/", tags=["root"])
-async def root():
+async def root() -> StandardResponse:
     return StandardResponse(
         code=0,
         status="success",

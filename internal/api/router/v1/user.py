@@ -6,7 +6,7 @@ from internal.middleware.mysql.models import ApiKeySchema, UserSchema
 
 from ...base import StandardResponse
 
-user_router = APIRouter(prefix="/user")
+user_router = APIRouter(prefix="/user", tags=["user"])
 
 
 class UserRequest(BaseModel):
@@ -15,7 +15,7 @@ class UserRequest(BaseModel):
 
 
 @user_router.post("/register")
-def register_user(request: UserRequest):
+def register_user(request: UserRequest) -> StandardResponse:
     with session() as conn:
         query = conn.query(UserSchema.user).filter(UserSchema.user == request.user)
         exist_user = query.first()
@@ -35,7 +35,7 @@ def register_user(request: UserRequest):
 
 
 @user_router.post("/key/generate")
-def generate_api_key(request: UserRequest):
+def generate_api_key(request: UserRequest) -> StandardResponse:
     with session() as conn:
         query = conn.query(UserSchema.uid, UserSchema.ak_num).filter(UserSchema.user == request.user and UserSchema.password == request.password)
         result = query.first()
@@ -47,7 +47,7 @@ def generate_api_key(request: UserRequest):
 
     if ak_num >= 5:
         return StandardResponse(code=1, status="error", message="You can only generate 5 keys at most")
-    
+
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
