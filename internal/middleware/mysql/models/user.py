@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, Column, Integer, String
+from datetime import datetime
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
 
 from .base import BaseSchema
 
@@ -9,8 +11,11 @@ class UserSchema(BaseSchema):
     """
 
     __tablename__ = "users"
-    uid = Column(Integer, primary_key=True, autoincrement=True)
+    uid: int = Column(Integer, primary_key=True, autoincrement=True)
+    create_at = Column(DateTime, default=datetime.now)
+    update_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    delete_at = Column(DateTime, nullable=True)
     user: str = Column(String(255), nullable=False)
     password: str = Column(String(255), nullable=False)
     is_admin: bool = Column(Boolean, nullable=False, default=False)
-    api_key: str = Column(String(255), nullable=False)
+    ak_num: int = Column(Integer, nullable=False, default=0)
