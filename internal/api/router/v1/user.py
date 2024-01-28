@@ -1,5 +1,8 @@
+import datetime
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from sqlalchemy import or_
 
 from internal.middleware.jwt import encode_token
 from internal.middleware.mysql import session
@@ -39,7 +42,7 @@ def register_user(request: UserRequest) -> StandardResponse:
 @user_router.post("/login")
 def login_user(request: UserRequest) -> StandardResponse:
     with session() as conn:
-        query = conn.query(UserSchema.uid).filter(UserSchema.user == request.user and UserSchema.password == request.password)
+        query = conn.query(UserSchema.uid).filter(UserSchema.user == request.user).filter(UserSchema.password == request.password)
         result = query.first()
 
     if not result:
@@ -64,7 +67,7 @@ def generate_api_key(uid: int = Depends(jwt_auth)) -> StandardResponse:
     (ak_num,) = result
 
     if ak_num >= 5:
-        return StandardResponse(code=1, status="error", message="You can only generate 5 keys at most")
+        return StandardResponse(code=1, status="error", message="You can only generate 5 api keys at most")
 
     with session() as conn:
         if not conn.is_active:
@@ -72,13 +75,20 @@ def generate_api_key(uid: int = Depends(jwt_auth)) -> StandardResponse:
 
         api_key = ApiKeySchema(uid=uid)
         conn.add(api_key)
-        conn.query(UserSchema).filter(UserSchema.uid == uid).update({"ak_num": UserSchema.ak_num + 1})
+        conn.query(UserSchema).filter(UserSchema.uid == uid).filter(
+            or_(UserSchema.delete_at.is_(None), datetime.datetime.now() < UserSchema.delete_at)
+        ).update({"ak_num": UserSchema.ak_num + 1})
         conn.commit()
-        data = {"uid": uid, "api_key_secret": api_key.api_key_secret}
+        data = {
+            "uid": uid,
+            "create_at": api_key.create_at,
+            "expire_at": api_key.delete_at,
+            "api_key_secret": api_key.api_key_secret,
+        }
 
     return StandardResponse(
         code=0,
         status="success",
-        message="Generate key successfully. Please save it carefully.",
+        message="Generate api key successfully. Please save it carefully.",
         data=data,
     )
