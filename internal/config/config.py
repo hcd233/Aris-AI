@@ -12,3 +12,7 @@ MYSQL_HOST = os.environ.get("MYSQL_HOST")
 MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
 MYSQL_PORT = int(os.environ.get("MYSQL_PORT", "3306"))
 MYSQL_USER = os.environ.get("MYSQL_USER")
+
+JWT_TOKEN_SECRET = os.environ.get("JWT_TOKEN_SECRET")
+JWT_TOKEN_EXPIRE_TIME = int(os.environ.get("JWT_TOKEN_EXPIRE_TIME", 3600))
+JWT_TOKEN_ALGORITHM = os.environ.get("JWT_TOKEN_ALGORITHM", "HS256")
