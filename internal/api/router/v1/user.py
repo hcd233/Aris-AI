@@ -1,10 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
+from internal.middleware.jwt import encode_token
 from internal.middleware.mysql import session
 from internal.middleware.mysql.models import ApiKeySchema, UserSchema
 
-from ...base import StandardResponse
+from ...auth import jwt_auth
+from ..base import StandardResponse
 
 user_router = APIRouter(prefix="/user", tags=["user"])
 
@@ -34,16 +36,32 @@ def register_user(request: UserRequest) -> StandardResponse:
     return StandardResponse(code=0, status="success", message="Register successfully")
 
 
-@user_router.post("/key/generate")
-def generate_api_key(request: UserRequest) -> StandardResponse:
+@user_router.post("/login")
+def login_user(request: UserRequest) -> StandardResponse:
     with session() as conn:
-        query = conn.query(UserSchema.uid, UserSchema.ak_num).filter(UserSchema.user == request.user and UserSchema.password == request.password)
+        query = conn.query(UserSchema.uid).filter(UserSchema.user == request.user and UserSchema.password == request.password)
         result = query.first()
 
     if not result:
         return StandardResponse(code=1, status="error", message="User not exist or password incorrect")
 
-    (uid, ak_num) = result
+    (uid,) = result
+
+    data = {"token": encode_token(uid)}
+
+    return StandardResponse(code=0, status="success", message="Login successfully", data=data)
+
+
+@user_router.post("/key/generate", dependencies=[Depends(jwt_auth)])
+def generate_api_key(uid: int = Depends(jwt_auth)) -> StandardResponse:
+    with session() as conn:
+        query = conn.query(UserSchema.ak_num).filter(UserSchema.uid == uid)
+        result = query.first()
+
+    if not result:
+        return StandardResponse(code=1, status="error", message="Token invalid")
+
+    (ak_num,) = result
 
     if ak_num >= 5:
         return StandardResponse(code=1, status="error", message="You can only generate 5 keys at most")
@@ -56,7 +74,7 @@ def generate_api_key(request: UserRequest) -> StandardResponse:
         conn.add(api_key)
         conn.query(UserSchema).filter(UserSchema.uid == uid).update({"ak_num": UserSchema.ak_num + 1})
         conn.commit()
-        data = {"api_key_secret": api_key.api_key_secret}
+        data = {"uid": uid, "api_key_secret": api_key.api_key_secret}
 
     return StandardResponse(
         code=0,
