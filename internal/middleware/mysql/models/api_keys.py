@@ -7,7 +7,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from internal.config import API_KEY_EXPIRE_TIME
 
 from .base import BaseSchema
-from .user import UserSchema
+from .users import UserSchema
 
 
 def generate_api_key_secret() -> str:

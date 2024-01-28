@@ -1,3 +1,3 @@
 from .base import BaseSchema
-from .user import UserSchema
-from .api_key import ApiKeySchema
+from .users import UserSchema
+from .api_keys import ApiKeySchema
