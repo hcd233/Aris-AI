@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from fastapi import Depends, HTTPException, status
 from jwt import ExpiredSignatureError, InvalidSignatureError, InvalidTokenError
 
+from internal.logger import logger
 from internal.middleware.jwt import decode_token
 
 from .base import bearer_scheme
@@ -10,9 +11,9 @@ from .base import bearer_scheme
 
 async def jwt_auth(
     bearer_auth: Optional[str] = Depends(bearer_scheme),
-) -> int:
+) -> Tuple[int, int]:
     try:
-        uid = decode_token(bearer_auth.credentials)
+        uid, level = decode_token(bearer_auth.credentials)
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -26,5 +27,12 @@ async def jwt_auth(
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    except Exception as e:
+        logger.error(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    return uid
+    return uid, level

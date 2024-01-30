@@ -1,4 +1,5 @@
 import datetime
+from typing import Tuple
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -19,7 +20,7 @@ class UserRequest(BaseModel):
     password: str
 
 
-@user_router.post("/register")
+@user_router.post("/register", response_model=StandardResponse)
 def register_user(request: UserRequest) -> StandardResponse:
     with session() as conn:
         query = conn.query(UserSchema.user).filter(UserSchema.user == request.user)
@@ -40,28 +41,33 @@ def register_user(request: UserRequest) -> StandardResponse:
     return StandardResponse(code=0, status="success", message="Register successfully")
 
 
-@user_router.post("/login")
+@user_router.post("/login", response_model=StandardResponse)
 def login_user(request: UserRequest) -> StandardResponse:
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
             conn.close()
-        
-        query = conn.query(UserSchema.uid).filter(UserSchema.user == request.user).filter(UserSchema.password == request.password)
+
+        query = (
+            conn.query(UserSchema.uid, UserSchema.is_admin).filter(UserSchema.user == request.user).filter(UserSchema.password == request.password)
+        )
         result = query.first()
 
     if not result:
         return StandardResponse(code=1, status="error", message="User not exist or password incorrect")
 
-    (uid,) = result
+    (uid, is_admin) = result
 
-    data = {"token": encode_token(uid)}
+    data = {"uid": uid, "token": encode_token(uid=uid, level=is_admin)}
 
     return StandardResponse(code=0, status="success", message="Login successfully", data=data)
 
 
-@user_router.get("/key/list", dependencies=[Depends(jwt_auth)])
-def get_api_key_list(uid: int = Depends(jwt_auth)) -> StandardResponse:
+@user_router.get("/{uid}/key/list", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
+    _uid, level = info
+    if not (level or _uid == uid):
+        return StandardResponse(code=1, status="error", message="No permission")
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
@@ -69,7 +75,7 @@ def get_api_key_list(uid: int = Depends(jwt_auth)) -> StandardResponse:
 
         query = (
             conn.query(ApiKeySchema.api_key_secret, ApiKeySchema.create_at, ApiKeySchema.delete_at)
-            .filter(ApiKeySchema.uid == uid)
+            .filter(or_(ApiKeySchema.uid == uid, level == 1))
             .filter(or_(ApiKeySchema.delete_at.is_(None), ApiKeySchema.delete_at > datetime.datetime.now()))
         )
         result = query.all()
@@ -80,8 +86,11 @@ def get_api_key_list(uid: int = Depends(jwt_auth)) -> StandardResponse:
     return StandardResponse(code=0, status="success", message="List api key successfully", data=data)
 
 
-@user_router.post("/key/generate", dependencies=[Depends(jwt_auth)])
-def generate_api_key(uid: int = Depends(jwt_auth)) -> StandardResponse:
+@user_router.post("/{uid}/key/generate", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+def generate_api_key(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
+    _uid, _ = info
+    if _uid != uid:
+        return StandardResponse(code=1, status="error", message="No permission")
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
@@ -124,14 +133,20 @@ def generate_api_key(uid: int = Depends(jwt_auth)) -> StandardResponse:
     )
 
 
-@user_router.delete("/key/delete", dependencies=[Depends(jwt_auth)])
-def delete_api_key(uid: int = Depends(jwt_auth), api_key_secret: str = "") -> StandardResponse:
+@user_router.delete("/{uid}/key/delete", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+def delete_api_key(uid: int, info: Tuple[int, int] = Depends(jwt_auth), api_key_secret: str = "") -> StandardResponse:
+    _uid, level = info
+    if not (level or _uid == uid):
+        return StandardResponse(code=1, status="error", message="No permission")
+
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
             conn.close()
-        
-        query = conn.query(ApiKeySchema.api_key_secret).filter(ApiKeySchema.api_key_secret == api_key_secret).filter(ApiKeySchema.uid == uid)
+
+        query = (
+            conn.query(ApiKeySchema.api_key_secret).filter(ApiKeySchema.api_key_secret == api_key_secret).filter(or_(ApiKeySchema.uid == uid, level))
+        )
         result = query.first()
 
     if not result:

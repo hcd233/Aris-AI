@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 from uuid import uuid4
 
 import jwt
@@ -11,15 +11,16 @@ from internal.config import JWT_TOKEN_ALGORITHM, JWT_TOKEN_EXPIRE_TIME, JWT_TOKE
 class Claim(BaseModel):
     uid: int
     uuid: str = str(uuid4())
+    level: int = 0
     exp: float = time.time() + JWT_TOKEN_EXPIRE_TIME
 
 
-def encode_token(uid: int) -> str:
-    claim = Claim(uid=uid).model_dump()
+def encode_token(uid: int, level: int = 0) -> str:
+    claim = Claim(uid=uid, level=level).model_dump()
     return jwt.encode(claim, JWT_TOKEN_SECRET, algorithm=JWT_TOKEN_ALGORITHM)
 
 
-def decode_token(token: str) -> int:
+def decode_token(token: str) -> Tuple[int, int]:
     claim: Dict[str, Any] = jwt.decode(token, JWT_TOKEN_SECRET, algorithms=[JWT_TOKEN_ALGORITHM])
-    uid = claim.get("uid")
-    return uid
+    uid, level = claim.get("uid"), claim.get("level")
+    return uid, level
