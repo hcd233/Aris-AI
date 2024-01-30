@@ -31,6 +31,7 @@ def register_user(request: UserRequest) -> StandardResponse:
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
+            conn.close()
 
         user = UserSchema(user=request.user, password=request.password)
         conn.add(user)
@@ -42,6 +43,10 @@ def register_user(request: UserRequest) -> StandardResponse:
 @user_router.post("/login")
 def login_user(request: UserRequest) -> StandardResponse:
     with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        
         query = conn.query(UserSchema.uid).filter(UserSchema.user == request.user).filter(UserSchema.password == request.password)
         result = query.first()
 
@@ -58,6 +63,10 @@ def login_user(request: UserRequest) -> StandardResponse:
 @user_router.get("/key/list", dependencies=[Depends(jwt_auth)])
 def get_api_key_list(uid: int = Depends(jwt_auth)) -> StandardResponse:
     with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+
         query = (
             conn.query(ApiKeySchema.api_key_secret, ApiKeySchema.create_at, ApiKeySchema.delete_at)
             .filter(ApiKeySchema.uid == uid)
@@ -74,6 +83,10 @@ def get_api_key_list(uid: int = Depends(jwt_auth)) -> StandardResponse:
 @user_router.post("/key/generate", dependencies=[Depends(jwt_auth)])
 def generate_api_key(uid: int = Depends(jwt_auth)) -> StandardResponse:
     with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+
         query = conn.query(UserSchema.ak_num).filter(UserSchema.uid == uid)
         result = query.first()
 
@@ -88,6 +101,7 @@ def generate_api_key(uid: int = Depends(jwt_auth)) -> StandardResponse:
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
+            conn.close()
 
         api_key = ApiKeySchema(uid=uid)
         conn.add(api_key)
@@ -113,6 +127,10 @@ def generate_api_key(uid: int = Depends(jwt_auth)) -> StandardResponse:
 @user_router.delete("/key/delete", dependencies=[Depends(jwt_auth)])
 def delete_api_key(uid: int = Depends(jwt_auth), api_key_secret: str = "") -> StandardResponse:
     with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        
         query = conn.query(ApiKeySchema.api_key_secret).filter(ApiKeySchema.api_key_secret == api_key_secret).filter(ApiKeySchema.uid == uid)
         result = query.first()
 

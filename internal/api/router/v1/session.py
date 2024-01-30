@@ -14,6 +14,7 @@ async def new_session(uid: int = Depends(sk_auth)):
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
+            conn.close()
 
         _session = SessionSchema(uid=uid)
         conn.add(_session)
