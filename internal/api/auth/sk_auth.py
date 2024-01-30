@@ -1,16 +1,16 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 from fastapi import Depends, HTTPException, status
 
 from internal.middleware.mysql import session
-from internal.middleware.mysql.models import ApiKeySchema
+from internal.middleware.mysql.models import ApiKeySchema, UserSchema
 
 from .base import bearer_scheme
 
 
 async def sk_auth(
     bearer_auth: Optional[str] = Depends(bearer_scheme),
-) -> int:
+) -> Tuple[int, int]:
     with session() as conn:
         query = conn.query(ApiKeySchema.uid).filter(ApiKeySchema.api_key_secret == bearer_auth.credentials)
         result = query.first()
@@ -22,4 +22,10 @@ async def sk_auth(
         )
 
     (uid,) = result
-    return uid
+
+    with session() as conn:
+        query = conn.query(UserSchema.is_admin).filter(UserSchema.uid == uid)
+        result = query.first()
+
+    (level,) = result
+    return uid, level
