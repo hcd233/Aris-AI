@@ -5,16 +5,17 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import or_
 
 from internal.middleware.mysql import session
-from internal.middleware.mysql.models import SessionSchema
+from internal.middleware.mysql.model import SessionSchema
 
 from ...auth import sk_auth
-from ..base import StandardResponse
+from ...model.base import StandardResponse
+from ...model.v1 import UidRequest
 
 session_router = APIRouter(prefix="/session", tags=["session"])
 
 
-@session_router.get("/{uid}/list", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def list_session(uid: int, page_id: int = 0, per_page_num: int = 20, info: Tuple[int, int] = Depends(sk_auth)):
+@session_router.get("/{se_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def get_session(uid: int, se_id: str, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):
         return StandardResponse(code=1, status="error", message="no permission")
@@ -23,43 +24,12 @@ async def list_session(uid: int, page_id: int = 0, per_page_num: int = 20, info:
         if not conn.is_active:
             conn.rollback()
             conn.close()
-
-        query = (
-            conn.query(SessionSchema.session_id, SessionSchema.create_at, SessionSchema.update_at)
-            .filter(SessionSchema.uid == uid)
-            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
-            .order_by(SessionSchema.create_at.desc())
-            .offset(page_id * per_page_num)
-        )
-        result = query.limit(per_page_num).all()
-
-    data = {
-        "session_list": [
-            {
-                "session_id": session_id,
-                "create_at": create_at,
-                "last_chat_at": update_at,
-            }
-            for session_id, create_at, update_at in result
-        ]
-    }
-    return StandardResponse(code=0, status="success", message="Get session list successfully", data=data)
-
-
-@session_router.get("/{uid}/{session_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def get_session(uid: int, session_id: str, info: Tuple[int, int] = Depends(sk_auth)):
-    _uid, level = info
-    if not (level or _uid == uid):
-        return StandardResponse(code=1, status="error", message="no permission")
-
-    with session() as conn:
-        if not conn.is_active:
-            conn.rollback()
-            conn.close()
+        else:
+            conn.commit()
 
         query = (
             conn.query(SessionSchema.session_id, SessionSchema.conversation, SessionSchema.create_at, SessionSchema.update_at)
-            .filter(SessionSchema.session_id == session_id)
+            .filter(SessionSchema.session_id == se_id)
             .filter(SessionSchema.uid == uid)
             .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
         )
@@ -78,17 +48,19 @@ async def get_session(uid: int, session_id: str, info: Tuple[int, int] = Depends
     return StandardResponse(code=0, status="success", message="Get session successfully", data=data)
 
 
-@session_router.post("/{uid}/new", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def new_session(uid: int, info: Tuple[int, int] = Depends(sk_auth)):
+@session_router.post("/new", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def new_session(request: UidRequest, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, _ = info
-    if _uid != uid:
+    if _uid != request.uid:
         return StandardResponse(code=1, status="error", message="no permission")
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
             conn.close()
+        else:
+            conn.commit()
 
-        _session = SessionSchema(uid=uid)
+        _session = SessionSchema(uid=request.uid)
         conn.add(_session)
         conn.commit()
         data = {"session_id": _session.session_id, "create_at": _session.create_at}
@@ -96,8 +68,8 @@ async def new_session(uid: int, info: Tuple[int, int] = Depends(sk_auth)):
     return StandardResponse(code=0, status="success", message="Create session successfully", data=data)
 
 
-@session_router.delete("/{uid}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def delete_session(uid: int, session_id: str, info: Tuple[int, int] = Depends(sk_auth)):
+@session_router.delete("/{se_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def delete_session(uid: int, se_id: int, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):
         return StandardResponse(code=1, status="error", message="no permission")
@@ -106,10 +78,12 @@ async def delete_session(uid: int, session_id: str, info: Tuple[int, int] = Depe
         if not conn.is_active:
             conn.rollback()
             conn.close()
+        else:
+            conn.commit()
 
         query = (
             conn.query(SessionSchema.session_id, SessionSchema.delete_at)
-            .filter(SessionSchema.session_id == session_id)
+            .filter(SessionSchema.session_id == se_id)
             .filter(SessionSchema.uid == uid)
             .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
         )
@@ -119,7 +93,7 @@ async def delete_session(uid: int, session_id: str, info: Tuple[int, int] = Depe
 
         query = (
             conn.query(SessionSchema)
-            .filter(SessionSchema.session_id == session_id)
+            .filter(SessionSchema.session_id == se_id)
             .filter(SessionSchema.uid == uid)
             .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
         )

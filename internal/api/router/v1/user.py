@@ -2,22 +2,17 @@ import datetime
 from typing import Tuple
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 from sqlalchemy import or_
 
 from internal.middleware.jwt import encode_token
 from internal.middleware.mysql import session
-from internal.middleware.mysql.models import ApiKeySchema, UserSchema
+from internal.middleware.mysql.model import ApiKeySchema, SessionSchema, UserSchema
 
-from ...auth import jwt_auth
-from ..base import StandardResponse
+from ...auth import jwt_auth, sk_auth
+from ...model.base import StandardResponse
+from ...model.v1 import UserRequest
 
 user_router = APIRouter(prefix="/user", tags=["user"])
-
-
-class UserRequest(BaseModel):
-    user: str
-    password: str
 
 
 @user_router.post("/register", response_model=StandardResponse)
@@ -33,6 +28,8 @@ def register_user(request: UserRequest) -> StandardResponse:
         if not conn.is_active:
             conn.rollback()
             conn.close()
+        else:
+            conn.commit()
 
         user = UserSchema(user=request.user, password=request.password)
         conn.add(user)
@@ -47,6 +44,8 @@ def login_user(request: UserRequest) -> StandardResponse:
         if not conn.is_active:
             conn.rollback()
             conn.close()
+        else:
+            conn.commit()
 
         query = (
             conn.query(UserSchema.uid, UserSchema.is_admin).filter(UserSchema.user == request.user).filter(UserSchema.password == request.password)
@@ -72,6 +71,8 @@ def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> Sta
         if not conn.is_active:
             conn.rollback()
             conn.close()
+        else:
+            conn.commit()
 
         query = (
             conn.query(ApiKeySchema.ak_id, ApiKeySchema.api_key_secret, ApiKeySchema.create_at, ApiKeySchema.delete_at)
@@ -86,77 +87,36 @@ def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> Sta
     return StandardResponse(code=0, status="success", message="List api key successfully", data=data)
 
 
-@user_router.post("/{uid}/key/generate", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
-def generate_api_key(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
-    _uid, _ = info
-    if _uid != uid:
-        return StandardResponse(code=1, status="error", message="No permission")
-    with session() as conn:
-        if not conn.is_active:
-            conn.rollback()
-            conn.close()
-
-        query = conn.query(UserSchema.ak_num).filter(UserSchema.uid == uid)
-        result = query.first()
-
-    if not result:
-        return StandardResponse(code=1, status="error", message="Token invalid")
-
-    (ak_num,) = result
-
-    if ak_num >= 5:
-        return StandardResponse(code=1, status="error", message="You can only generate 5 api keys at most")
-
-    with session() as conn:
-        if not conn.is_active:
-            conn.rollback()
-            conn.close()
-
-        api_key = ApiKeySchema(uid=uid)
-        conn.add(api_key)
-        conn.query(UserSchema).filter(UserSchema.uid == uid).filter(
-            or_(UserSchema.delete_at.is_(None), datetime.datetime.now() < UserSchema.delete_at)
-        ).update({"ak_num": UserSchema.ak_num + 1})
-        conn.commit()
-        data = {
-            "uid": uid,
-            "create_at": api_key.create_at,
-            "expire_at": api_key.delete_at,
-            "api_key_secret": api_key.api_key_secret,
-        }
-
-    return StandardResponse(
-        code=0,
-        status="success",
-        message="Generate api key successfully. Please save it carefully.",
-        data=data,
-    )
-
-
-@user_router.delete("/{uid}/key/{ak_id}/delete", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
-def delete_api_key(uid: int, ak_id: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
+@user_router.get("/{uid}/session", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def list_session(uid: int, page_id: int = 0, per_page_num: int = 20, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):
-        return StandardResponse(code=1, status="error", message="No permission")
+        return StandardResponse(code=1, status="error", message="no permission")
 
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
             conn.close()
-        query = conn.query(ApiKeySchema.api_key_secret).filter(ApiKeySchema.ak_id == ak_id)
-        result = query.first()
+        else:
+            conn.commit()
 
-    if not result:
-        return StandardResponse(code=1, status="error", message="Key not exist")
+        query = (
+            conn.query(SessionSchema.session_id, SessionSchema.create_at, SessionSchema.update_at)
+            .filter(SessionSchema.uid == uid)
+            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            .order_by(SessionSchema.create_at.desc())
+            .offset(page_id * per_page_num)
+        )
+        result = query.limit(per_page_num).all()
 
-    with session() as conn:
-        if not conn.is_active:
-            conn.rollback()
-
-        conn.query(ApiKeySchema).filter(ApiKeySchema.ak_id == ak_id).update({ApiKeySchema.delete_at: datetime.datetime.now()})
-        conn.query(UserSchema).filter(UserSchema.uid == uid).filter(
-            or_(UserSchema.delete_at.is_(None), datetime.datetime.now() < UserSchema.delete_at)
-        ).update({UserSchema.ak_num: UserSchema.ak_num - 1})
-        conn.commit()
-
-    return StandardResponse(code=0, status="success", message="Delete api key successfully")
+    data = {
+        "session_list": [
+            {
+                "session_id": session_id,
+                "create_at": create_at,
+                "last_chat_at": update_at,
+            }
+            for session_id, create_at, update_at in result
+        ]
+    }
+    return StandardResponse(code=0, status="success", message="Get session list successfully", data=data)
