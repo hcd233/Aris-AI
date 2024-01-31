@@ -62,7 +62,7 @@ def login_user(request: UserRequest) -> StandardResponse:
     return StandardResponse(code=0, status="success", message="Login successfully", data=data)
 
 
-@user_router.get("/{uid}/key", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+@user_router.get("/{uid}/keys", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
 def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
     _uid, level = info
     if not (level or _uid == uid):
@@ -87,7 +87,7 @@ def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> Sta
     return StandardResponse(code=0, status="success", message="List api key successfully", data=data)
 
 
-@user_router.get("/{uid}/session", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+@user_router.get("/{uid}/sessions", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def list_session(uid: int, page_id: int = 0, per_page_num: int = 20, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):
