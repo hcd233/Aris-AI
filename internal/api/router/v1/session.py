@@ -14,8 +14,8 @@ from ...model.v1 import UidRequest
 session_router = APIRouter(prefix="/session", tags=["session"])
 
 
-@session_router.post("/new", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def new_session(request: UidRequest, info: Tuple[int, int] = Depends(sk_auth)):
+@session_router.post("/newSession", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def create_session(request: UidRequest, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, _ = info
     if _uid != request.uid:
         return StandardResponse(code=1, status="error", message="no permission")
@@ -68,7 +68,7 @@ async def get_session(uid: int, se_id: str, info: Tuple[int, int] = Depends(sk_a
     return StandardResponse(code=0, status="success", message="Get session successfully", data=data)
 
 
-@session_router.delete("/{se_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+@session_router.delete("/{se_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def delete_session(uid: int, se_id: int, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):
