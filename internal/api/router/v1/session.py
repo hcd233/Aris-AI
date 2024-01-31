@@ -14,6 +14,26 @@ from ...model.v1 import UidRequest
 session_router = APIRouter(prefix="/session", tags=["session"])
 
 
+@session_router.post("/new", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def new_session(request: UidRequest, info: Tuple[int, int] = Depends(sk_auth)):
+    _uid, _ = info
+    if _uid != request.uid:
+        return StandardResponse(code=1, status="error", message="no permission")
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        _session = SessionSchema(uid=request.uid)
+        conn.add(_session)
+        conn.commit()
+        data = {"session_id": _session.session_id, "create_at": _session.create_at}
+
+    return StandardResponse(code=0, status="success", message="Create session successfully", data=data)
+
+
 @session_router.get("/{se_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def get_session(uid: int, se_id: str, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
@@ -46,26 +66,6 @@ async def get_session(uid: int, se_id: str, info: Tuple[int, int] = Depends(sk_a
         "last_chat_at": update_at,
     }
     return StandardResponse(code=0, status="success", message="Get session successfully", data=data)
-
-
-@session_router.post("/new", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def new_session(request: UidRequest, info: Tuple[int, int] = Depends(sk_auth)):
-    _uid, _ = info
-    if _uid != request.uid:
-        return StandardResponse(code=1, status="error", message="no permission")
-    with session() as conn:
-        if not conn.is_active:
-            conn.rollback()
-            conn.close()
-        else:
-            conn.commit()
-
-        _session = SessionSchema(uid=request.uid)
-        conn.add(_session)
-        conn.commit()
-        data = {"session_id": _session.session_id, "create_at": _session.create_at}
-
-    return StandardResponse(code=0, status="success", message="Create session successfully", data=data)
 
 
 @session_router.delete("/{se_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
