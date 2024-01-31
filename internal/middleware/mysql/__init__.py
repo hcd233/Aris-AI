@@ -5,7 +5,7 @@ from sqlalchemy.orm.session import Session
 from internal.config import MYSQL_DATABASE, MYSQL_HOST, MYSQL_PASSWORD, MYSQL_PORT, MYSQL_USER
 from internal.logger import logger
 
-from .models import BaseSchema
+from .model import BaseSchema
 
 
 def init_mysql_session() -> sessionmaker[Session]:
