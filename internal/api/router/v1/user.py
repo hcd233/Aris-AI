@@ -143,10 +143,7 @@ def delete_api_key(uid: int, info: Tuple[int, int] = Depends(jwt_auth), api_key_
         if not conn.is_active:
             conn.rollback()
             conn.close()
-
-        query = (
-            conn.query(ApiKeySchema.api_key_secret).filter(ApiKeySchema.api_key_secret == api_key_secret).filter(or_(ApiKeySchema.uid == uid, level))
-        )
+        query = conn.query(ApiKeySchema.api_key_secret).filter(ApiKeySchema.ak_id == ak_id)
         result = query.first()
 
     if not result:
@@ -156,7 +153,7 @@ def delete_api_key(uid: int, info: Tuple[int, int] = Depends(jwt_auth), api_key_
         if not conn.is_active:
             conn.rollback()
 
-        conn.query(ApiKeySchema).filter(ApiKeySchema.api_key_secret == api_key_secret).update({ApiKeySchema.delete_at: datetime.datetime.now()})
+        conn.query(ApiKeySchema).filter(ApiKeySchema.ak_id == ak_id).update({ApiKeySchema.delete_at: datetime.datetime.now()})
         conn.query(UserSchema).filter(UserSchema.uid == uid).filter(
             or_(UserSchema.delete_at.is_(None), datetime.datetime.now() < UserSchema.delete_at)
         ).update({UserSchema.ak_num: UserSchema.ak_num - 1})
