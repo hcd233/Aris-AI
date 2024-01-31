@@ -63,7 +63,7 @@ def login_user(request: UserRequest) -> StandardResponse:
     return StandardResponse(code=0, status="success", message="Login successfully", data=data)
 
 
-@user_router.get("/{uid}/key/list", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+@user_router.get("/{uid}/key", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
 def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
     _uid, level = info
     if not (level or _uid == uid):
@@ -133,8 +133,8 @@ def generate_api_key(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> Sta
     )
 
 
-@user_router.delete("/{uid}/key/delete", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
-def delete_api_key(uid: int, info: Tuple[int, int] = Depends(jwt_auth), api_key_secret: str = "") -> StandardResponse:
+@user_router.delete("/{uid}/key/{ak_id}/delete", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+def delete_api_key(uid: int, ak_id: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
     _uid, level = info
     if not (level or _uid == uid):
         return StandardResponse(code=1, status="error", message="No permission")
