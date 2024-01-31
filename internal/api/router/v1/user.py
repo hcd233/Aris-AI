@@ -74,7 +74,7 @@ def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> Sta
             conn.close()
 
         query = (
-            conn.query(ApiKeySchema.api_key_secret, ApiKeySchema.create_at, ApiKeySchema.delete_at)
+            conn.query(ApiKeySchema.ak_id, ApiKeySchema.api_key_secret, ApiKeySchema.create_at, ApiKeySchema.delete_at)
             .filter(or_(ApiKeySchema.uid == uid, level == 1))
             .filter(or_(ApiKeySchema.delete_at.is_(None), ApiKeySchema.delete_at > datetime.datetime.now()))
         )
