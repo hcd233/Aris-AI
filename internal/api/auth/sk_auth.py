@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 from fastapi import Depends, HTTPException, status
 
 from internal.middleware.mysql import session
-from internal.middleware.mysql.models import ApiKeySchema, UserSchema
+from internal.middleware.mysql.model import ApiKeySchema, UserSchema
 
 from .base import bearer_scheme
 
