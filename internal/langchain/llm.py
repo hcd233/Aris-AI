@@ -9,14 +9,21 @@ LLM_TYPE_CLS_MAP: Dict[str, ChatOpenAI] = {
 }
 
 
-def ping_llm(llm_type: str, llm_name: str, base_url: str, api_key: str) -> bool:
-    """Ping LLM to check if it is available."""
+def init_llm(llm_type: str, llm_name: str, base_url: str, api_key: str) -> ChatOpenAI | None:
+    """Init LLM."""
     llm_cls = LLM_TYPE_CLS_MAP.get(llm_type)
     if not llm_cls:
         logger.error(f"Invalid LLM type: {llm_type}")
-        return False
+        return None
 
-    llm = llm_cls(model=llm_name, base_url=base_url, api_key=api_key)
+    llm = llm_cls(model_name=llm_name, base_url=base_url, api_key=api_key)
+    logger.debug(f"Init LLM: {llm.model_name}")
+    return llm
+
+
+def ping_llm(llm: ChatOpenAI) -> bool:
+    """Ping LLM to check if it is available."""
+
     try:
         llm_reply = llm.invoke("Ping! Please reply with 'Pong!'")
         logger.debug(f"Ping LLM reply: {llm_reply.content}")
@@ -24,5 +31,5 @@ def ping_llm(llm_type: str, llm_name: str, base_url: str, api_key: str) -> bool:
         logger.error(f"Ping LLM failed: {e}")
         return False
 
-    logger.info(f"Ping LLM successfully: {llm_name}")
+    logger.info(f"Ping LLM successfully: {llm.model_name}")
     return True
