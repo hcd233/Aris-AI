@@ -34,8 +34,8 @@ async def create_session(request: UidRequest, info: Tuple[int, int] = Depends(sk
     return StandardResponse(code=0, status="success", message="Create session successfully", data=data)
 
 
-@session_router.get("/{se_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def get_session(uid: int, se_id: str, info: Tuple[int, int] = Depends(sk_auth)):
+@session_router.get("/{session_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def get_session(uid: int, session_id: str, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):
         return StandardResponse(code=1, status="error", message="no permission")
@@ -49,7 +49,7 @@ async def get_session(uid: int, se_id: str, info: Tuple[int, int] = Depends(sk_a
 
         query = (
             conn.query(SessionSchema.session_id, SessionSchema.conversation, SessionSchema.create_at, SessionSchema.update_at)
-            .filter(SessionSchema.session_id == se_id)
+            .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == uid)
             .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
         )
@@ -68,8 +68,8 @@ async def get_session(uid: int, se_id: str, info: Tuple[int, int] = Depends(sk_a
     return StandardResponse(code=0, status="success", message="Get session successfully", data=data)
 
 
-@session_router.delete("/{se_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def delete_session(uid: int, se_id: int, info: Tuple[int, int] = Depends(sk_auth)):
+@session_router.delete("/{session_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def delete_session(uid: int, session_id: int, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):
         return StandardResponse(code=1, status="error", message="no permission")
@@ -83,7 +83,7 @@ async def delete_session(uid: int, se_id: int, info: Tuple[int, int] = Depends(s
 
         query = (
             conn.query(SessionSchema.session_id, SessionSchema.delete_at)
-            .filter(SessionSchema.session_id == se_id)
+            .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == uid)
             .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
         )
@@ -93,7 +93,7 @@ async def delete_session(uid: int, se_id: int, info: Tuple[int, int] = Depends(s
 
         query = (
             conn.query(SessionSchema)
-            .filter(SessionSchema.session_id == se_id)
+            .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == uid)
             .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
         )

@@ -65,8 +65,8 @@ def generate_api_key(request: UidRequest, info: Tuple[int, int] = Depends(jwt_au
     )
 
 
-@key_router.delete("/{ak_id}/delete", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
-def delete_api_key(uid: int, ak_id: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
+@key_router.delete("/{api_key_id}/delete", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+def delete_api_key(uid: int, api_key_id: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
     _uid, level = info
     if not (level or _uid == uid):
         return StandardResponse(code=1, status="error", message="No permission")
@@ -77,7 +77,7 @@ def delete_api_key(uid: int, ak_id: int, info: Tuple[int, int] = Depends(jwt_aut
             conn.close()
         else:
             conn.commit()
-        query = conn.query(ApiKeySchema.api_key_secret).filter(ApiKeySchema.ak_id == ak_id)
+        query = conn.query(ApiKeySchema.api_key_secret).filter(ApiKeySchema.ak_id == api_key_id)
         result = query.first()
 
     if not result:
@@ -90,7 +90,7 @@ def delete_api_key(uid: int, ak_id: int, info: Tuple[int, int] = Depends(jwt_aut
         else:
             conn.commit()
 
-        conn.query(ApiKeySchema).filter(ApiKeySchema.ak_id == ak_id).update({ApiKeySchema.delete_at: datetime.datetime.now()})
+        conn.query(ApiKeySchema).filter(ApiKeySchema.ak_id == api_key_id).update({ApiKeySchema.delete_at: datetime.datetime.now()})
         conn.query(UserSchema).filter(UserSchema.uid == uid).filter(
             or_(UserSchema.delete_at.is_(None), datetime.datetime.now() < UserSchema.delete_at)
         ).update({UserSchema.ak_num: UserSchema.ak_num - 1})
