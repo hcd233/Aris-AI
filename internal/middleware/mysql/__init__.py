@@ -7,11 +7,13 @@ from internal.logger import logger
 
 from .model import BaseSchema
 
+MYSQL_LINK = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+
 
 def init_mysql_session() -> sessionmaker[Session]:
-    mysql_link = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+
     engine = create_engine(
-        mysql_link,
+        MYSQL_LINK,
         connect_args={
             "charset": "utf8mb4",
         },
