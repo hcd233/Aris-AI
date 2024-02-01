@@ -68,7 +68,7 @@ async def get_session(uid: int, se_id: str, info: Tuple[int, int] = Depends(sk_a
     return StandardResponse(code=0, status="success", message="Get session successfully", data=data)
 
 
-@session_router.delete("/{se_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+@session_router.delete("/{se_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def delete_session(uid: int, se_id: int, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):

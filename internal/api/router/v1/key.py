@@ -65,7 +65,7 @@ def generate_api_key(request: UidRequest, info: Tuple[int, int] = Depends(jwt_au
     )
 
 
-@key_router.delete("/{ak_id}", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+@key_router.delete("/{ak_id}/delete", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
 def delete_api_key(uid: int, ak_id: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
     _uid, level = info
     if not (level or _uid == uid):
