@@ -4,7 +4,7 @@ from typing import Tuple
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, or_
 
-from internal.langchain.llm import ping_llm
+from internal.langchain.llm import init_llm, ping_llm
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema
 
@@ -96,12 +96,10 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
         if result:
             return StandardResponse(code=1, status="error", message="Model name already exist")
 
-        pong = ping_llm(
-            llm_type=request.llm_type,
-            llm_name=request.llm_name,
-            base_url=request.base_url,
-            api_key=request.api_key,
-        )
+        llm = init_llm(llm_type=request.llm_type, llm_name=request.llm_name, base_url=request.base_url, api_key=request.api_key)
+        if not llm:
+            return StandardResponse(code=1, status="error", message="Invalid LLM type")
+        pong = ping_llm(llm=llm)
 
         if not pong:
             return StandardResponse(code=1, status="error", message="Ping LLM failed. Check your config.")
@@ -122,6 +120,6 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
         conn.add(llm)
         conn.commit()
 
-    data = {"llm_id": llm.llm_id}
+        data = {"llm_id": llm.llm_id}
 
     return StandardResponse(code=0, status="success", message="Create model successfully", data=data)
