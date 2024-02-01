@@ -8,9 +8,6 @@ from .users import UserSchema
 
 
 class SessionSchema(BaseSchema):
-    """\
-    The user schema. Contain some necessary fields.
-    """
 
     __tablename__ = "sessions"
     session_id: int = Column(Integer, primary_key=True, autoincrement=True)

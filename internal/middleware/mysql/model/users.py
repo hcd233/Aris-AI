@@ -6,9 +6,6 @@ from .base import BaseSchema
 
 
 class UserSchema(BaseSchema):
-    """\
-    The user schema. Contain some necessary fields.
-    """
 
     __tablename__ = "users"
     uid: int = Column(Integer, primary_key=True, autoincrement=True)
