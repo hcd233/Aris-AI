@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import Any, Dict, List
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Text
 
 from .base import BaseSchema
 from .users import UserSchema
@@ -14,5 +13,5 @@ class SessionSchema(BaseSchema):
     create_at: datetime = Column(DateTime, default=datetime.now)
     update_at: datetime = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     delete_at: datetime = Column(DateTime, nullable=True)
-    conversation: List[Dict[str, Any]] = Column(JSON, nullable=False, default=[])
+    conversation: str = Column(Text, nullable=True)
     uid: int = Column(Integer, ForeignKey(UserSchema.uid, ondelete="CASCADE"), nullable=False)
