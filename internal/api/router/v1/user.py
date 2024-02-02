@@ -9,8 +9,8 @@ from internal.middleware.mysql import session
 from internal.middleware.mysql.model import ApiKeySchema, SessionSchema, UserSchema
 
 from ...auth import jwt_auth, sk_auth
-from ...model.base import StandardResponse
-from ...model.v1 import UserRequest
+from ...model.response import StandardResponse
+from ...model.request import UserRequest
 
 user_router = APIRouter(prefix="/user", tags=["user"])
 

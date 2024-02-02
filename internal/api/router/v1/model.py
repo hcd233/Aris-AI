@@ -9,8 +9,8 @@ from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema
 
 from ...auth import sk_auth
-from ...model.base import StandardResponse
-from ...model.v1 import CreateLLMRequest
+from ...model.response import StandardResponse
+from ...model.request import CreateLLMRequest
 
 model_router = APIRouter(prefix="/model", tags=["model"])
 

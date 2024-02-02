@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..model.base import StandardResponse
+from ..model.response import StandardResponse
 
 root_router = APIRouter(prefix="/root", tags=["root"])
 

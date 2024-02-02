@@ -8,8 +8,8 @@ from internal.middleware.mysql import session
 from internal.middleware.mysql.model import ApiKeySchema, UserSchema
 
 from ...auth import jwt_auth
-from ...model.base import StandardResponse
-from ...model.v1 import UidRequest
+from ...model.response import StandardResponse
+from ...model.request import UidRequest
 
 key_router = APIRouter(prefix="/key", tags=["key"])
 
