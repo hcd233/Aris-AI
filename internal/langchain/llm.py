@@ -9,14 +9,21 @@ LLM_TYPE_CLS_MAP: Dict[str, ChatOpenAI] = {
 }
 
 
-def init_llm(llm_type: str, llm_name: str, base_url: str, api_key: str) -> ChatOpenAI | None:
+def init_llm(llm_type: str, llm_name: str, base_url: str, api_key: str, **kwargs) -> ChatOpenAI | None:
     """Init LLM."""
     llm_cls = LLM_TYPE_CLS_MAP.get(llm_type)
     if not llm_cls:
         logger.error(f"Invalid LLM type: {llm_type}")
         return None
 
-    llm = llm_cls(model_name=llm_name, base_url=base_url, api_key=api_key)
+    kwargs.update(
+        {
+            "verbose": True,
+            "streaming": True,
+        }
+    )
+
+    llm = llm_cls(model_name=llm_name, base_url=base_url, api_key=api_key, **kwargs)
     logger.debug(f"Init LLM: {llm.model_name}")
     return llm
 
