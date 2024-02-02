@@ -8,3 +8,8 @@ class StandardResponse(BaseModel):
     status: Literal["success", "error"]
     message: str | None = None
     data: Dict[str, Any] | None = None
+
+
+class StreamingResponse(BaseModel):
+    delta: Any | None = None
+    finish: bool = False
