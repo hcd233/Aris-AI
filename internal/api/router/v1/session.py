@@ -1,6 +1,6 @@
 import datetime
-from json import dumps
-from typing import Tuple
+from json import dumps, loads
+from typing import Any, Callable, Dict, Tuple
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -17,7 +17,7 @@ from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSch
 
 from ...auth import sk_auth
 from ...model.request import ChatRequest, UidRequest
-from ...model.response import StandardResponse, SSEResponse
+from ...model.response import SSEResponse, StandardResponse
 
 session_router = APIRouter(prefix="/session", tags=["session"])
 
@@ -68,10 +68,13 @@ async def get_session(uid: int, session_id: str, info: Tuple[int, int] = Depends
 
         session_id, create_at, update_at = result
 
-        query = conn.query(MessageSchema.message_id, MessageSchema.chat_at, MessageSchema.message).filter(MessageSchema.session_id == session_id)
+        query = conn.query(MessageSchema.id, MessageSchema.chat_at, MessageSchema.message).filter(MessageSchema.session_id == session_id)
         results = query.all()
 
-        messages = [{"message_id": message_id, "chat_at": chat_at, "message": message} for message_id, chat_at, message in results]
+        parse_message_func: Callable[[Dict[str, Any]], Dict[str, Any]] = lambda x: {"from": x.get("type"), "message": x.get("data").get("content")}
+        messages = [
+            {"message_id": message_id, "chat_at": chat_at, "message": parse_message_func(loads(message))} for message_id, chat_at, message in results
+        ]
 
     data = {
         "session_id": session_id,
