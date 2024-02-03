@@ -3,14 +3,15 @@ from json import dumps
 from typing import Tuple
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from langchain.chains import LLMChain
 from langchain_openai import ChatOpenAI
 from sqlalchemy import or_
-from starlette.responses import StreamingResponse
 
 from internal.langchain.llm import init_llm
 from internal.langchain.memory import init_history, init_memory
 from internal.langchain.prompt import init_prompt
+from internal.logger import logger
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSchema
 
@@ -169,10 +170,30 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
         ai_name=_llm.ai_name,
     )
 
-    chain = LLMChain(llm=llm, prompt=prompt, memory=memory, verbose=True, return_final_only=True)
+    chain = LLMChain(name="multi_turn_chat_llm_chain", llm=llm, prompt=prompt, memory=memory, verbose=False, return_final_only=True)
 
-    async def streaming():
-        async for chunk in chain.astream(request.message):
-            yield dumps({"delta": chunk}, ensure_ascii=False) + "\n"
+    async def _sse_response():
+        try:
+            async for chunk in chain.astream_events(
+                {"user_prompt": request.message}, name=f"session_{session_id}_chat", event="stream", version="v1"
+            ):
+                event, name, run_id = chunk.get("event"), chunk.get("name"), chunk.get("run_id")
+                data = {"extras": {"name": name, "chat_id": run_id, "event": event, "session_id": session_id}}
+                if event == "on_chat_model_start":
+                    data.update({"delta": "", "status": "start"})
+                elif event == "on_chat_model_stream":
+                    data.update({"delta": chunk.get("data").get("chunk").content, "status": "generating"})
+                elif event == "on_chat_model_end":
+                    data.update({"delta": "", "status": "finished"})
+                else:
+                    continue
 
-    return StreamingResponse(content=streaming(), media_type="text/event-stream")
+                data = dumps(data, ensure_ascii=False) + "\n"
+                logger.debug(f"SSE response: {data}")
+
+                yield data
+        except Exception as e:
+            logger.error(f"SSE failed: {e}")
+            yield dumps({"extras": {}, "delta": "", "status": f"exception: {e}"}) + "\n"
+
+    return StreamingResponse(_sse_response(), media_type="text/event-stream")
