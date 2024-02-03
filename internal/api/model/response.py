@@ -10,6 +10,7 @@ class StandardResponse(BaseModel):
     data: Dict[str, Any] | None = None
 
 
-class StreamingResponse(BaseModel):
-    delta: Any | None = None
-    finish: bool = False
+class SSEResponse(BaseModel):
+    extras: Dict[str, Any] | None = None
+    delta: str
+    status: str
