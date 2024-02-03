@@ -16,10 +16,29 @@ from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSchema
 
 from ...auth import sk_auth
-from ...model.request import ChatRequest, UidRequest
+from ...model.request import ChatRequest
 from ...model.response import SSEResponse, StandardResponse
 
 session_router = APIRouter(prefix="/session", tags=["session"])
+
+
+@session_router.post("", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def create_session(info: Tuple[int, int] = Depends(sk_auth)):
+    uid, _ = info
+
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        _session = SessionSchema(uid=uid)
+        conn.add(_session)
+        conn.commit()
+        data = {"session_id": _session.session_id, "create_at": _session.create_at}
+
+    return StandardResponse(code=0, status="success", message="Create session successfully", data=data)
 
 
 @session_router.get("/sessions", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
@@ -53,26 +72,6 @@ async def list_session(page_id: int = 0, per_page_num: int = 20, info: Tuple[int
         ]
     }
     return StandardResponse(code=0, status="success", message="Get session list successfully", data=data)
-
-
-@session_router.post("/newSession", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def create_session(request: UidRequest, info: Tuple[int, int] = Depends(sk_auth)):
-    _uid, _ = info
-    if _uid != request.uid:
-        return StandardResponse(code=1, status="error", message="no permission")
-    with session() as conn:
-        if not conn.is_active:
-            conn.rollback()
-            conn.close()
-        else:
-            conn.commit()
-
-        _session = SessionSchema(uid=request.uid)
-        conn.add(_session)
-        conn.commit()
-        data = {"session_id": _session.session_id, "create_at": _session.create_at}
-
-    return StandardResponse(code=0, status="success", message="Create session successfully", data=data)
 
 
 @session_router.get("/{session_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
@@ -205,7 +204,14 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
             ai_name=_llm.ai_name,
         )
 
-        chain = LLMChain(name="multi_turn_chat_llm_chain", llm=llm, prompt=prompt, memory=memory, verbose=False, return_final_only=True)
+        chain = LLMChain(
+            name="multi_turn_chat_llm_chain",
+            llm=llm,
+            prompt=prompt,
+            memory=memory,
+            verbose=True,
+            return_final_only=True,
+        )
     except Exception as e:
         logger.error(f"Init langchain modules failed: {e}")
         return StandardResponse(code=1, status="error", message="Chat init failed")
