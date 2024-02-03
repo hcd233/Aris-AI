@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  alice-ai-api:
+    image: alice-ai:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../logs:/data/logs
+    ports:
+      - 8080:8080
+    env_file:
+      - ../envs/deployment/api.env
+    healthcheck:
+      test: ["CMD-SHELL", "curl --get http://alice-ai-api:8080"]
+      interval: 30s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
+    entrypoint: [
+      "python", "alice_api.py",
+    ]
+  
+  alice-ai-webui:
+    image: alice-ai:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8501:8501
+    env_file:
+      - ../envs/deployment/webui.env
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://alice-ai-webui:8501"]
+      interval: 30s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
+    entrypoint: [
+      "streamlit", "run", 
+      "alice_webui.py",
+    ]
+    depends_on:
+      - mysql
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    privileged: true
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD" ]
+      interval: 5s
+      retries: 10
+    env_file:
+      - ../envs/deployment/mysql.env
+volumes:
+  mysql-data:
+    name: "mysql-data"
+    external: true
+      
+# docker-compose -f docker/docker-compose.yml up -d --no-build
