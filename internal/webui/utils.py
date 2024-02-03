@@ -20,7 +20,7 @@ def parse_response(response: requests.Response, action: str) -> Dict[str, Any]:
     resp: Dict[str, Any] = response.json()
 
     if resp.get("status") != "success":
-        st.error(f"{action} Status Error {response.get('message')}")
+        st.error(f"{action} Status Error {resp.get('message')}")
         st.stop
 
     data = resp.get("data")
@@ -28,7 +28,7 @@ def parse_response(response: requests.Response, action: str) -> Dict[str, Any]:
 
 
 def get_llms(api_key: str) -> List[str]:
-    url = urljoin(API_URL, "v1/model/llms")
+    url = urljoin(API_URL, "v1/model/llm/llms")
     headers = {"Authorization": f"Bearer {api_key}"}
     response = requests.get(
         url=url,
@@ -80,6 +80,20 @@ def get_history(api_key: str, session_id: int) -> List[Dict[Literal["role", "con
     messages = [{field: message["message"][field] for field in ("role", "content")} for message in messages]
 
     return messages
+
+
+def new_session(api_key: str) -> int:
+    url = urljoin(API_URL, "v1/session")
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    response = requests.post(
+        url=url,
+        headers=headers,
+    )
+
+    data = parse_response(response, "create chat session")
+
+    return data.get("session_id")
 
 
 def chat(api_key: str, session_id: int, message: str, llm_name: str, temperature: float) -> Iterator[str]:
