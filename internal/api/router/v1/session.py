@@ -22,6 +22,39 @@ from ...model.response import SSEResponse, StandardResponse
 session_router = APIRouter(prefix="/session", tags=["session"])
 
 
+@session_router.get("/sessions", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def list_session(page_id: int = 0, per_page_num: int = 20, info: Tuple[int, int] = Depends(sk_auth)):
+    uid, _ = info
+
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        query = (
+            conn.query(SessionSchema.session_id, SessionSchema.create_at, SessionSchema.update_at)
+            .filter(SessionSchema.uid == uid)
+            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            .order_by(SessionSchema.create_at.desc())
+            .offset(page_id * per_page_num)
+        )
+        result = query.limit(per_page_num).all()
+
+    data = {
+        "session_list": [
+            {
+                "session_id": session_id,
+                "create_at": create_at,
+                "last_chat_at": update_at,
+            }
+            for session_id, create_at, update_at in result
+        ]
+    }
+    return StandardResponse(code=0, status="success", message="Get session list successfully", data=data)
+
+
 @session_router.post("/newSession", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def create_session(request: UidRequest, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, _ = info
@@ -43,10 +76,8 @@ async def create_session(request: UidRequest, info: Tuple[int, int] = Depends(sk
 
 
 @session_router.get("/{session_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def get_session(uid: int, session_id: str, info: Tuple[int, int] = Depends(sk_auth)):
-    _uid, level = info
-    if not (level or _uid == uid):
-        return StandardResponse(code=1, status="error", message="no permission")
+async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth)):
+    uid, level = info
 
     with session() as conn:
         if not conn.is_active:
@@ -71,7 +102,7 @@ async def get_session(uid: int, session_id: str, info: Tuple[int, int] = Depends
         query = conn.query(MessageSchema.id, MessageSchema.chat_at, MessageSchema.message).filter(MessageSchema.session_id == session_id)
         results = query.all()
 
-        parse_message_func: Callable[[Dict[str, Any]], Dict[str, Any]] = lambda x: {"from": x.get("type"), "message": x.get("data").get("content")}
+        parse_message_func: Callable[[Dict[str, Any]], Dict[str, Any]] = lambda x: {"role": x.get("type"), "content": x.get("data").get("content")}
         messages = [
             {"message_id": message_id, "chat_at": chat_at, "message": parse_message_func(loads(message))} for message_id, chat_at, message in results
         ]

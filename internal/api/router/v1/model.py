@@ -9,8 +9,8 @@ from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema
 
 from ...auth import sk_auth
-from ...model.response import StandardResponse
 from ...model.request import CreateLLMRequest
+from ...model.response import StandardResponse
 
 model_router = APIRouter(prefix="/model", tags=["model"])
 
@@ -32,43 +32,6 @@ async def get_model_list():
     data = {"llm_list": [{"llm_id": llm_id, "llm_name": llm_name} for (llm_id, llm_name) in result]}
 
     return StandardResponse(code=0, status="success", message="Get llm list successfully", data=data)
-
-
-@model_router.get("/llm/{model_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def get_model_info(model_id: int):
-    with session() as conn:
-        if not conn.is_active:
-            conn.rollback()
-            conn.close()
-        else:
-            conn.commit()
-
-        query = (
-            conn.query(
-                LLMSchema.llm_id,
-                LLMSchema.llm_name,
-                func.date(LLMSchema.create_at),
-                func.date(LLMSchema.update_at),
-                LLMSchema.max_tokens,
-            )
-            .filter(LLMSchema.llm_id == model_id)
-            .filter(or_(LLMSchema.delete_at.is_(None), datetime.datetime.now() < LLMSchema.delete_at))
-        )
-        result = query.first()
-
-    if not result:
-        return StandardResponse(code=1, status="error", message="Model not exist")
-
-    llm_id, name, create_at, update_at, max_tokens = result
-    data = {
-        "llm_id": llm_id,
-        "llm_name": name,
-        "create_at": create_at,
-        "update_at": update_at,
-        "max_tokens": max_tokens,
-    }
-
-    return StandardResponse(code=0, status="success", message="Get model info successfully", data=data)
 
 
 @model_router.post("/llm/newLLM", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
@@ -123,3 +86,40 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
         data = {"llm_id": llm.llm_id}
 
     return StandardResponse(code=0, status="success", message="Create model successfully", data=data)
+
+
+@model_router.get("/llm/{model_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def get_model_info(model_id: int):
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        query = (
+            conn.query(
+                LLMSchema.llm_id,
+                LLMSchema.llm_name,
+                func.date(LLMSchema.create_at),
+                func.date(LLMSchema.update_at),
+                LLMSchema.max_tokens,
+            )
+            .filter(LLMSchema.llm_id == model_id)
+            .filter(or_(LLMSchema.delete_at.is_(None), datetime.datetime.now() < LLMSchema.delete_at))
+        )
+        result = query.first()
+
+    if not result:
+        return StandardResponse(code=1, status="error", message="Model not exist")
+
+    llm_id, name, create_at, update_at, max_tokens = result
+    data = {
+        "llm_id": llm_id,
+        "llm_name": name,
+        "create_at": create_at,
+        "update_at": update_at,
+        "max_tokens": max_tokens,
+    }
+
+    return StandardResponse(code=0, status="success", message="Get model info successfully", data=data)
