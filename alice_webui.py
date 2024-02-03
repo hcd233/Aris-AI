@@ -3,7 +3,7 @@ from typing import Any, Dict
 import streamlit as st
 from streamlit import session_state as cache
 
-from internal.webui.utils import chat, get_history, get_llms, get_sessions
+from internal.webui.utils import chat, get_history, get_llms, get_sessions, new_session
 
 ABOUT = """\
 ### Alice AI是由lvlvko研发的大语言模型，提供api和webui服务
@@ -37,7 +37,7 @@ def init_webui():
     # init streamlit config
     st.set_page_config(
         page_title="Alice AI WebUI",
-        page_icon="🤖",
+        page_icon="🍃",
         layout="wide",  # "centered",
         initial_sidebar_state="expanded",
         menu_items={
@@ -52,7 +52,7 @@ def init_webui():
         "api_key": "",
         "llm": "",
         "temperature": 0.7,
-        "session_id": "",
+        "session_id": "-1",
         "history": [],
     }
 
@@ -68,6 +68,12 @@ def sidebar():
     st.sidebar.header("Sessions")
     sessions = get_sessions(cache.api_key)
     cache.session_id = st.sidebar.selectbox("Select session", options=sessions)
+
+    new_session_onclick = st.sidebar.button("New Chat", key="new_chat")
+    if new_session_onclick:
+        cache.session_id = new_session(cache.api_key)
+        st.success(f"New session created: {cache.session_id}")
+        st.rerun()
 
     st.sidebar.header("LLMs")
     llms = get_llms(cache.api_key)
@@ -86,7 +92,8 @@ def body():
             container.chat_message(name=role).write(content)
         elif role == "ai":
             container.chat_message(name=role).markdown(content)
-    if prompt := st.chat_input(f"Chat with {cache.llm}"):
+    prompt = st.chat_input(f"Chat with {cache.llm}", max_chars=2048)
+    if prompt and prompt.strip():
         container.chat_message("human").write(prompt)
 
         # NOTE: this is may occur display problem
