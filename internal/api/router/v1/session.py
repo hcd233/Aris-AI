@@ -17,7 +17,7 @@ from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSch
 
 from ...auth import sk_auth
 from ...model.request import ChatRequest, UidRequest
-from ...model.response import StandardResponse
+from ...model.response import StandardResponse, SSEResponse
 
 session_router = APIRouter(prefix="/session", tags=["session"])
 
@@ -118,7 +118,7 @@ async def delete_session(uid: int, session_id: int, info: Tuple[int, int] = Depe
 
 
 @session_router.post("/{session_id}/chat", dependencies=[Depends(sk_auth)])
-async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = Depends(sk_auth)):
+async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = Depends(sk_auth)) -> StandardResponse | SSEResponse:
     _uid, _ = info
 
     with session() as conn:
@@ -147,30 +147,34 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
         if not _llm:
             return StandardResponse(code=1, status="error", message="LLM not exist")
 
-    llm: ChatOpenAI = init_llm(
-        llm_type=_llm.llm_type,
-        llm_name=_llm.llm_name,
-        base_url=_llm.base_url,
-        api_key=_llm.api_key,
-        temperature=request.temperature,
-        max_tokens=_llm.max_tokens,
-    )
+    try:
+        llm: ChatOpenAI = init_llm(
+            llm_type=_llm.llm_type,
+            llm_name=_llm.llm_name,
+            base_url=_llm.base_url,
+            api_key=_llm.api_key,
+            temperature=request.temperature,
+            max_tokens=_llm.max_tokens,
+        )
 
-    history = init_history(session_id=session_id)
-    memory = init_memory(
-        history=history,
-        ai_name=_llm.ai_name,
-        user_name=_llm.user_name,
-        k=8,
-    )
-    prompt = init_prompt(
-        sys_name=_llm.sys_name,
-        sys_prompt=_llm.sys_prompt,
-        user_name=_llm.user_name,
-        ai_name=_llm.ai_name,
-    )
+        history = init_history(session_id=session_id)
+        memory = init_memory(
+            history=history,
+            ai_name=_llm.ai_name,
+            user_name=_llm.user_name,
+            k=8,
+        )
+        prompt = init_prompt(
+            sys_name=_llm.sys_name,
+            sys_prompt=_llm.sys_prompt,
+            user_name=_llm.user_name,
+            ai_name=_llm.ai_name,
+        )
 
-    chain = LLMChain(name="multi_turn_chat_llm_chain", llm=llm, prompt=prompt, memory=memory, verbose=False, return_final_only=True)
+        chain = LLMChain(name="multi_turn_chat_llm_chain", llm=llm, prompt=prompt, memory=memory, verbose=False, return_final_only=True)
+    except Exception as e:
+        logger.error(f"Init langchain modules failed: {e}")
+        return StandardResponse(code=1, status="error", message="Chat init failed")
 
     async def _sse_response():
         try:
