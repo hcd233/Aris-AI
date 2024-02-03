@@ -1,12 +1,10 @@
 from langchain.prompts import PromptTemplate
 
 chat_template: str = """\
-{sys_name}:
-{sys_prompt}
+{sys_name}:{sys_prompt}
 {history}
-{user_name}:
-{user_prompt}
-{ai_name}:
+{user_name}:{user_prompt}
+{ai_name}:\
 """
 
 
