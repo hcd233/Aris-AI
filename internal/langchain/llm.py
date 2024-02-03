@@ -23,7 +23,7 @@ def init_llm(llm_type: str, llm_name: str, base_url: str, api_key: str, **kwargs
         }
     )
 
-    llm = llm_cls(model_name=llm_name, base_url=base_url, api_key=api_key, **kwargs)
+    llm = llm_cls(name=llm_name, model_name=llm_name, base_url=base_url, api_key=api_key, **kwargs)
     logger.debug(f"Init LLM: {llm.model_name}")
     return llm
 
