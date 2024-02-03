@@ -92,7 +92,7 @@ def body():
             container.chat_message(name=role).write(content)
         elif role == "ai":
             container.chat_message(name=role).markdown(content)
-    prompt = st.chat_input(f"Chat with {cache.llm}", max_chars=2048)
+    prompt = st.chat_input(f"Chat with {cache.llm}", max_chars=8192)
     if prompt and prompt.strip():
         container.chat_message("human").write(prompt)
 
