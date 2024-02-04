@@ -52,7 +52,7 @@ def init_webui():
         "api_key": "",
         "llm": "",
         "temperature": 0.7,
-        "session_id": "-1",
+        "session_id": None,
         "history": [],
     }
 
@@ -84,6 +84,9 @@ def sidebar():
 
 
 def body():
+    if not cache.session_id:
+        st.info("Please create or select a session")
+        return
     cache.history = get_history(cache.api_key, cache.session_id)
     container = st.container(height=700, border=False)
     for message in cache.history:
