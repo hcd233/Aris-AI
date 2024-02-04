@@ -7,14 +7,14 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ../logs:/data/logs
+      - ../../logs:/data/logs
     ports:
       - 8080:8080
     env_file:
-      - ../envs/deployment/api.env
+      - ../../envs/deployment/api.env
     healthcheck:
       test: ["CMD-SHELL", "curl --get http://alice-ai-api:8080"]
-      interval: 30s
+      interval: 5s
       timeout: 5s
       retries: 2
       start_period: 30s
@@ -30,13 +30,13 @@ services:
     ports:
       - 8501:8501
     env_file:
-      - ../envs/deployment/webui.env
+      - ../../envs/deployment/webui.env
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://alice-ai-webui:8501"]
-      interval: 30s
+      interval: 5s
       timeout: 5s
       retries: 2
-      start_period: 30s
+      start_period: 5s
     entrypoint: [
       "streamlit", "run", 
       "alice_webui.py",
@@ -48,16 +48,16 @@ services:
     container_name: mysql
     privileged: true
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql-data:/var/lib/alice-mysql
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD" ]
       interval: 5s
       retries: 10
     env_file:
-      - ../envs/deployment/mysql.env
+      - ../../envs/deployment/mysql.env
 volumes:
   mysql-data:
-    name: "mysql-data"
+    name: mysql-data
     external: true
-      
-# docker-compose -f docker/docker-compose.yml up -d --no-build
+
+# docker-compose -f docker/deployment/docker-compose.yml up -d --no-build

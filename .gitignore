@@ -4,4 +4,3 @@ __pycache__
 # Files
 *.env
 *.log
-*.yml
