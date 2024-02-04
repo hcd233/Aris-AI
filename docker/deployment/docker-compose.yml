@@ -15,7 +15,7 @@ services:
     env_file:
       - ../../envs/deployment/api.env
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://alice-ai-api:8080/root"]
+      test: ["CMD-SHELL", "curl -f http://alice-ai-api:8080/root/"]
       interval: 10s
       timeout: 5s
       retries: 2
@@ -51,12 +51,10 @@ services:
     image: mysql:latest
     container_name: alice-ai-mysql
     privileged: true
-    ports:
-      - 3306:3306
     volumes:
       - mysql-data:/var/lib/alice-mysql
     healthcheck:
-      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD" ]
+      test: [ "CMD-SHELL", "mysqladmin ping -h alice-ai-mysql -P 3306 -u$$MYSQL_USER -p$$MYSQL_PASSWORD" ]
       interval: 5s
       retries: 10
     env_file:
