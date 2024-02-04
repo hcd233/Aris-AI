@@ -3,6 +3,8 @@ version: '3.8'
 services:
   alice-ai-api:
     image: alice-ai:latest
+    container_name: alice-ai-api
+    privileged: true
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,17 +15,21 @@ services:
     env_file:
       - ../../envs/deployment/api.env
     healthcheck:
-      test: ["CMD-SHELL", "curl --get http://alice-ai-api:8080"]
-      interval: 5s
+      test: ["CMD-SHELL", "curl -f http://alice-ai-api:8080/root"]
+      interval: 10s
       timeout: 5s
       retries: 2
-      start_period: 30s
     entrypoint: [
       "python", "alice_api.py",
     ]
-  
+    depends_on:
+      alice-ai-mysql:
+        condition: service_healthy
+
   alice-ai-webui:
     image: alice-ai:latest
+    container_name: alice-ai-webui
+    privileged: true
     build:
       context: .
       dockerfile: Dockerfile
@@ -33,20 +39,20 @@ services:
       - ../../envs/deployment/webui.env
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://alice-ai-webui:8501"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 2
-      start_period: 5s
     entrypoint: [
       "streamlit", "run", 
       "alice_webui.py",
     ]
-    depends_on:
-      - mysql
-  mysql:
+
+  alice-ai-mysql:
     image: mysql:latest
-    container_name: mysql
+    container_name: alice-ai-mysql
     privileged: true
+    ports:
+      - 3306:3306
     volumes:
       - mysql-data:/var/lib/alice-mysql
     healthcheck:

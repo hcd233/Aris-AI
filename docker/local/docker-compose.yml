@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  mysql:
+  debug-alice-ai-mysql:
     image: mysql:latest
-    container_name: mysql
+    container_name: debug-alice-ai-mysql
+    privileged: true
     ports:
       - 3306:3306
-    privileged: true
     volumes:
       - mysql-data:/var/lib/alice-mysql
     healthcheck:
@@ -14,7 +14,7 @@ services:
       interval: 5s
       retries: 10
     env_file:
-      - ../../envs/deployment/mysql.env
+      - ../../envs/local/mysql.env
 volumes:
   mysql-data:
     name: mysql-data
