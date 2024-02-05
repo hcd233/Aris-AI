@@ -40,17 +40,21 @@ def init_history(session_id: int) -> BaseChatMessageHistory:
     return history
 
 
-def init_memory(
-    history: BaseChatMessageHistory,
-    user_name: str,
-    ai_name: str,
-    **kwargs
-) -> BaseChatMemory:
+def init_str_memory(history: BaseChatMessageHistory, user_name: str, ai_name: str, **kwargs) -> BaseChatMemory:
     memory = ConversationBufferWindowMemory(
         chat_memory=history,
         human_prefix=user_name,
         ai_prefix=ai_name,
         return_messages=False,
-        **kwargs
+        **kwargs,
+    )
+    return memory
+
+
+def init_msg_memory(history: BaseChatMessageHistory, **kwargs) -> BaseChatMemory:
+    memory = ConversationBufferWindowMemory(
+        chat_memory=history,
+        return_messages=True,
+        **kwargs,
     )
     return memory

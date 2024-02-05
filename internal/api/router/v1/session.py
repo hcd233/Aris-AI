@@ -9,8 +9,8 @@ from langchain_openai import ChatOpenAI
 from sqlalchemy import or_
 
 from internal.langchain.llm import init_llm
-from internal.langchain.memory import init_history, init_memory
-from internal.langchain.prompt import init_prompt
+from internal.langchain.memory import init_history, init_msg_memory, init_str_memory
+from internal.langchain.prompt import init_msg_prompt,init_str_prompt
 from internal.logger import logger
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSchema
@@ -191,18 +191,31 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
         )
 
         history = init_history(session_id=session_id)
-        memory = init_memory(
-            history=history,
-            ai_name=_llm.ai_name,
-            user_name=_llm.user_name,
-            k=8,
-        )
-        prompt = init_prompt(
-            sys_name=_llm.sys_name,
-            sys_prompt=_llm.sys_prompt,
-            user_name=_llm.user_name,
-            ai_name=_llm.ai_name,
-        )
+
+        match _llm.request_type:
+            case "string":
+                memory = init_str_memory(
+                    history=history,
+                    ai_name=_llm.ai_name,
+                    user_name=_llm.user_name,
+                    k=8,
+                )
+                prompt = init_str_prompt(
+                    sys_name=_llm.sys_name,
+                    sys_prompt=_llm.sys_prompt,
+                    user_name=_llm.user_name,
+                    ai_name=_llm.ai_name,
+                )
+            case "message":
+                memory = init_msg_memory(
+                    history=history,
+                    k=8,
+                )
+                prompt = init_msg_prompt(
+                    sys_prompt=_llm.sys_prompt,
+                )
+            case _:
+                return StandardResponse(code=1, status="error", message="Invalid request type")
 
         chain = LLMChain(
             name="multi_turn_chat_llm_chain",

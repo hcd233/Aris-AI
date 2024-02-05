@@ -13,6 +13,7 @@ class LLMSchema(BaseSchema):
     llm_id: int = Column(Integer, primary_key=True, autoincrement=True)
     llm_name: str = Column(String(255), nullable=False)
     llm_type: Literal["openai"] = Column(String(255), nullable=False)
+    request_type: Literal["string", "message"] = Column(String(255), nullable=False)
     create_at: datetime = Column(DateTime, default=datetime.now)
     update_at: datetime = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     delete_at: datetime = Column(DateTime, nullable=True)
