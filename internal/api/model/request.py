@@ -28,6 +28,15 @@ class CreateLLMRequest(BaseModel):
     max_tokens: int = 2048
 
 
+class CreateEmbeddingRequest(BaseModel):
+    embedding_name: str
+    embedding_type: Literal["openai"]
+    base_url: str
+    api_key: str
+    chunk_size: int
+    embed_dim: int
+
+
 class ChatRequest(BaseModel):
     llm_name: str
     temperature: float
