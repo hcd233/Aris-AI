@@ -8,16 +8,15 @@ from internal.langchain.llm import init_llm, ping_llm
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema
 
-from ...auth import sk_auth
-from ...model.request import CreateLLMRequest
-from ...model.response import StandardResponse
+from ....auth import jwt_auth
+from ....model.request import CreateLLMRequest
+from ....model.response import StandardResponse
 
-model_router = APIRouter(prefix="/model", tags=["model"])
 llm_router = APIRouter(prefix="/llm", tags=["llm"])
+embedding_router = APIRouter(prefix="/embedding", tags=["embedding"])
 
-
-@llm_router.post("", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(sk_auth)):
+@llm_router.post("", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(jwt_auth)):
     uid, level = info
 
     if not level:
