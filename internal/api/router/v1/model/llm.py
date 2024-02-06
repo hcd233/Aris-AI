@@ -8,12 +8,13 @@ from internal.langchain.llm import init_llm, ping_llm
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema
 
-from ....auth import jwt_auth
+from ....auth import jwt_auth, sk_auth
 from ....model.request import CreateLLMRequest
 from ....model.response import StandardResponse
 
 llm_router = APIRouter(prefix="/llm", tags=["llm"])
 embedding_router = APIRouter(prefix="/embedding", tags=["embedding"])
+
 
 @llm_router.post("", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
 async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(jwt_auth)):
@@ -40,9 +41,14 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
         if result:
             return StandardResponse(code=1, status="error", message="Model name already exist")
 
-        llm = init_llm(llm_type=request.llm_type, llm_name=request.llm_name, base_url=request.base_url, api_key=request.api_key)
+        llm = init_llm(
+            llm_type=request.llm_type,
+            llm_name=request.llm_name,
+            base_url=request.base_url,
+            api_key=request.api_key,
+        )
         if not llm:
-            return StandardResponse(code=1, status="error", message="Invalid LLM type")
+            return StandardResponse(code=1, status="error", message=f"Invalid LLM type {request.llm_type}")
         pong = ping_llm(llm=llm)
 
         if not pong:
