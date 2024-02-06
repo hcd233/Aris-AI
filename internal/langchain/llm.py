@@ -16,14 +16,15 @@ def init_llm(llm_type: str, llm_name: str, base_url: str, api_key: str, **kwargs
         logger.error(f"Invalid LLM type: {llm_type}")
         return None
 
-    kwargs.update(
-        {
-            "verbose": True,
-            "streaming": True,
-        }
-    )
+    kwargs.update({"verbose": True, "streaming": True})
 
-    llm = llm_cls(name=llm_name, model_name=llm_name, base_url=base_url, api_key=api_key, **kwargs)
+    llm = llm_cls(
+        name=llm_name,
+        model_name=llm_name,
+        base_url=base_url,
+        api_key=api_key,
+        **kwargs,
+    )
     logger.debug(f"Init LLM: {llm.model_name}")
     return llm
 
