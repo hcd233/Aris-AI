@@ -64,6 +64,9 @@ def create_embedding(request: CreateEmbeddingRequest, info: Tuple[int, int] = De
         )
 
         conn.add(embedding)
+        conn.commit()
+
+        return StandardResponse(code=0, status="success", message="Create Embedding successfully")
 
 
 @embedding_router.get("/embeddings", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
