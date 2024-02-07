@@ -65,4 +65,69 @@ def create_embedding(request: CreateEmbeddingRequest, info: Tuple[int, int] = De
 
         conn.add(embedding)
 
-        return StandardResponse(code=0, status="success", message="Embedding model created")
+
+@embedding_router.get("/embeddings", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def get_embedding_list():
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        query = conn.query(
+            EmbeddingSchema.embedding_id, EmbeddingSchema.embedding_name, EmbeddingSchema.chunk_size, EmbeddingSchema.embed_dim
+        ).filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.now() < EmbeddingSchema.delete_at))
+        result = query.all()
+
+        data = {
+            "embedding_list": [
+                {
+                    "embedding_id": embedding_id,
+                    "embedding_name": embedding_name,
+                    "chunk_size": chunk_size,
+                    "embed_dim": embed_dim,
+                }
+                for (embedding_id, embedding_name, chunk_size, embed_dim) in result
+            ]
+        }
+
+        return StandardResponse(code=0, status="success", message="Get Embedding list successfully", data=data)
+
+
+@embedding_router.get("/{embedding_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def get_model_info(embedding_id: int):
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        query = (
+            conn.query(
+                EmbeddingSchema.embedding_name,
+                func.date(EmbeddingSchema.create_at),
+                func.date(EmbeddingSchema.update_at),
+                EmbeddingSchema.chunk_size,
+                EmbeddingSchema.embed_dim,
+            )
+            .filter(EmbeddingSchema.embedding_id == embedding_id)
+            .filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.now() < EmbeddingSchema.delete_at))
+        )
+        result = query.first()
+
+    if not result:
+        return StandardResponse(code=1, status="error", message=f"Embedding id: {embedding_id} not exist")
+
+    embedding_name, create_at, update_at, chunk_size, embed_dim = result
+    data = {
+        "llm_id": embedding_id,
+        "llm_name": embedding_name,
+        "create_at": create_at,
+        "update_at": update_at,
+        "chunk_size": chunk_size,
+        "embed_dim": embed_dim,
+    }
+
+    return StandardResponse(code=0, status="success", message="Get Embedding info successfully", data=data)
