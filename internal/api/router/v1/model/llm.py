@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from typing import Tuple
 
 from fastapi import APIRouter, Depends
@@ -21,7 +21,7 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
     uid, level = info
 
     if not level:
-        return StandardResponse(code=1, status="error", message="No permission")
+        return StandardResponse(code=1, status="error", message="No permission to create LLM")
 
     with session() as conn:
         if not conn.is_active:
@@ -39,7 +39,7 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
         result = query.first()
 
         if result:
-            return StandardResponse(code=1, status="error", message="Model name already exist")
+            return StandardResponse(code=1, status="error", message=f"LLM name: `{request.llm_name}` already exist")
 
         llm = init_llm(
             llm_type=request.llm_type,
@@ -73,11 +73,11 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
 
         data = {"llm_id": llm.llm_id}
 
-    return StandardResponse(code=0, status="success", message="Create model successfully", data=data)
+    return StandardResponse(code=0, status="success", message="Create LLM successfully", data=data)
 
 
 @llm_router.get("/llms", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def get_model_list():
+async def get_llm_list():
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
@@ -85,9 +85,7 @@ async def get_model_list():
         else:
             conn.commit()
 
-        query = conn.query(LLMSchema.llm_id, LLMSchema.llm_name).filter(
-            or_(LLMSchema.delete_at.is_(None), datetime.datetime.now() < LLMSchema.delete_at)
-        )
+        query = conn.query(LLMSchema.llm_id, LLMSchema.llm_name).filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
         result = query.all()
 
     data = {"llm_list": [{"llm_id": llm_id, "llm_name": llm_name} for (llm_id, llm_name) in result]}
@@ -95,8 +93,8 @@ async def get_model_list():
     return StandardResponse(code=0, status="success", message="Get llm list successfully", data=data)
 
 
-@llm_router.get("/{model_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def get_model_info(model_id: int):
+@llm_router.get("/{llm_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+async def get_llm_info(llm_id: int):
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
@@ -106,21 +104,20 @@ async def get_model_info(model_id: int):
 
         query = (
             conn.query(
-                LLMSchema.llm_id,
                 LLMSchema.llm_name,
                 func.date(LLMSchema.create_at),
                 func.date(LLMSchema.update_at),
                 LLMSchema.max_tokens,
             )
-            .filter(LLMSchema.llm_id == model_id)
-            .filter(or_(LLMSchema.delete_at.is_(None), datetime.datetime.now() < LLMSchema.delete_at))
+            .filter(LLMSchema.llm_id == llm_id)
+            .filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
         )
         result = query.first()
 
     if not result:
-        return StandardResponse(code=1, status="error", message="Model not exist")
+        return StandardResponse(code=1, status="error", message=f"LLM id: {llm_id} not exist")
 
-    llm_id, name, create_at, update_at, max_tokens = result
+    name, create_at, update_at, max_tokens = result
     data = {
         "llm_id": llm_id,
         "llm_name": name,
@@ -129,4 +126,4 @@ async def get_model_info(model_id: int):
         "max_tokens": max_tokens,
     }
 
-    return StandardResponse(code=0, status="success", message="Get model info successfully", data=data)
+    return StandardResponse(code=0, status="success", message="Get llm info successfully", data=data)
