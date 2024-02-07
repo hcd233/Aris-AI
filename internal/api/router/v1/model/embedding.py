@@ -1,12 +1,14 @@
+from datetime import datetime
 from typing import Tuple
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import func, or_
 
 from internal.langchain.embedding import init_embedding, ping_embedding
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import EmbeddingSchema
 
-from ....auth import jwt_auth
+from ....auth import jwt_auth, sk_auth
 from ....model.request import CreateEmbeddingRequest
 from ....model.response import StandardResponse
 
@@ -18,7 +20,7 @@ def create_embedding(request: CreateEmbeddingRequest, info: Tuple[int, int] = De
     uid, level = info
 
     if not level:
-        return StandardResponse(code=1, status="error", message="No permission")
+        return StandardResponse(code=1, status="error", message="No permission to create Embedding model")
 
     with session() as conn:
         if not conn.is_active:
@@ -36,7 +38,7 @@ def create_embedding(request: CreateEmbeddingRequest, info: Tuple[int, int] = De
         result = query.first()
 
         if result:
-            return StandardResponse(code=1, status="error", message="Model name already exist")
+            return StandardResponse(code=1, status="error", message=f"Embedding name: `{request.embedding_name}` already exist")
 
         embedding = init_embedding(
             embedding_type=request.embedding_type,
