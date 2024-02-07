@@ -16,6 +16,7 @@ mysql-connector-python = "^8.3.0"
 pyjwt = "^2.8.0"
 langchain-openai = "^0.0.5"
 streamlit = "^1.31.0"
+redis = "^5.0.1"
 
 
 [build-system]

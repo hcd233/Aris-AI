@@ -59,9 +59,27 @@ services:
       retries: 10
     env_file:
       - ../../envs/deployment/mysql.env
+
+  debug-alice-ai-redis:
+    image: bitnami/redis:latest
+    container_name: debug-alice-ai-redis
+    privileged: true
+    volumes:
+      - redis-data:/data
+      - ../../confs/deployment/redis.conf:/opt/bitnami/redis/mounted-etc/redis.conf
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep PONG" ]
+      interval: 5s
+      retries: 10
+    env_file:
+      - ../../envs/deployment/redis.env
+
 volumes:
   mysql-data:
     name: mysql-data
+    external: true
+  redis-data:
+    name: redis-data
     external: true
 
 # docker-compose -f docker/deployment/docker-compose.yml up -d --no-build
