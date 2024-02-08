@@ -9,16 +9,13 @@ from internal.middleware.mysql.model import ApiKeySchema, UserSchema
 
 from ...auth import jwt_auth
 from ...model.response import StandardResponse
-from ...model.request import UidRequest
 
 key_router = APIRouter(prefix="/key", tags=["key"])
 
 
 @key_router.post("", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
-def generate_api_key(request: UidRequest, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
-    _uid, _ = info
-    if _uid != request.uid:
-        return StandardResponse(code=1, status="error", message="No permission")
+def generate_api_key(info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
+    uid, _ = info
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
@@ -26,7 +23,7 @@ def generate_api_key(request: UidRequest, info: Tuple[int, int] = Depends(jwt_au
         else:
             conn.commit()
 
-        query = conn.query(UserSchema.ak_num).filter(UserSchema.uid == request.uid)
+        query = conn.query(UserSchema.ak_num).filter(UserSchema.uid == uid)
         result = query.first()
 
     if not result:
@@ -44,9 +41,9 @@ def generate_api_key(request: UidRequest, info: Tuple[int, int] = Depends(jwt_au
         else:
             conn.commit()
 
-        api_key = ApiKeySchema(uid=request.uid)
+        api_key = ApiKeySchema(uid=uid)
         conn.add(api_key)
-        conn.query(UserSchema).filter(UserSchema.uid == request.uid).filter(
+        conn.query(UserSchema).filter(UserSchema.uid == uid).filter(
             or_(UserSchema.delete_at.is_(None), datetime.datetime.now() < UserSchema.delete_at)
         ).update({"ak_num": UserSchema.ak_num + 1})
         conn.commit()
