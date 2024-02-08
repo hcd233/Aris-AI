@@ -86,9 +86,10 @@ async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth))
             conn.commit()
 
         query = (
-            conn.query(SessionSchema.session_id, SessionSchema.create_at, SessionSchema.update_at)
+            conn.query(SessionSchema.session_id, SessionSchema.create_at, SessionSchema.update_at, LLMSchema.llm_name)
             .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == uid)
+            .join(LLMSchema, isouter=True)
             .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
         )
         result = query.first()
@@ -96,7 +97,7 @@ async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth))
         if not result:
             return StandardResponse(code=1, status="error", message="Session not exist")
 
-        session_id, create_at, update_at = result
+        session_id, create_at, update_at, llm_name = result
 
         query = conn.query(MessageSchema.id, MessageSchema.chat_at, MessageSchema.message).filter(MessageSchema.session_id == session_id)
         results = query.all()
@@ -110,6 +111,7 @@ async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth))
         "session_id": session_id,
         "create_at": create_at,
         "update_at": update_at,
+        "bind_llm": llm_name,
         "messages": messages,
     }
     return StandardResponse(code=0, status="success", message="Get session successfully", data=data)
@@ -162,15 +164,21 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
             conn.commit()
 
         query = (
-            conn.query(SessionSchema.session_id)
+            conn.query(SessionSchema.session_id, LLMSchema.llm_name)
             .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == _uid)
+            .join(LLMSchema, isouter=True)
             .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
         )
 
-        if not query.first():
+        result = query.first()
+        if not result:
             return StandardResponse(code=1, status="error", message="Session not exist")
 
+        _, llm_name = result
+        if llm_name:
+            request.llm_name = llm_name
+            logger.debug(f"Use bind LLM: {llm_name}")
         query = (
             conn.query(LLMSchema)
             .filter(LLMSchema.llm_name == request.llm_name)
@@ -180,54 +188,59 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
         if not _llm:
             return StandardResponse(code=1, status="error", message="LLM not exist")
 
-    try:
-        llm: ChatOpenAI = init_llm(
-            llm_type=_llm.llm_type,
-            llm_name=_llm.llm_name,
-            base_url=_llm.base_url,
-            api_key=_llm.api_key,
-            temperature=request.temperature,
-            max_tokens=_llm.max_tokens,
-        )
+        if not llm_name:
+            conn.query(SessionSchema).filter(SessionSchema.session_id == session_id).update({SessionSchema.llm_id: _llm.llm_id})
+            conn.commit()
+            logger.debug(f"Bind LLM: {request.llm_name} to Session: {session_id}")
 
-        history = init_history(session_id=session_id)
+        try:
+            llm: ChatOpenAI = init_llm(
+                llm_type=_llm.llm_type,
+                llm_name=_llm.llm_name,
+                base_url=_llm.base_url,
+                api_key=_llm.api_key,
+                temperature=request.temperature,
+                max_tokens=_llm.max_tokens,
+            )
 
-        match _llm.request_type:
-            case "string":
-                memory = init_str_memory(
-                    history=history,
-                    ai_name=_llm.ai_name,
-                    user_name=_llm.user_name,
-                    k=8,
-                )
-                prompt = init_str_prompt(
-                    sys_name=_llm.sys_name,
-                    sys_prompt=_llm.sys_prompt,
-                    user_name=_llm.user_name,
-                    ai_name=_llm.ai_name,
-                )
-            case "message":
-                memory = init_msg_memory(
-                    history=history,
-                    k=8,
-                )
-                prompt = init_msg_prompt(
-                    sys_prompt=_llm.sys_prompt,
-                )
-            case _:
-                return StandardResponse(code=1, status="error", message="Invalid request type")
+            history = init_history(session_id=session_id)
 
-        chain = LLMChain(
-            name="multi_turn_chat_llm_chain",
-            llm=llm,
-            prompt=prompt,
-            memory=memory,
-            verbose=True,
-            return_final_only=True,
-        )
-    except Exception as e:
-        logger.error(f"Init langchain modules failed: {e}")
-        return StandardResponse(code=1, status="error", message="Chat init failed")
+            match _llm.request_type:
+                case "string":
+                    memory = init_str_memory(
+                        history=history,
+                        ai_name=_llm.ai_name,
+                        user_name=_llm.user_name,
+                        k=8,
+                        )
+                    prompt = init_str_prompt(
+                        sys_name=_llm.sys_name,
+                        sys_prompt=_llm.sys_prompt,
+                        user_name=_llm.user_name,
+                        ai_name=_llm.ai_name,
+                    )
+                case "message":
+                    memory = init_msg_memory(
+                        history=history,
+                        k=8,
+                    )
+                    prompt = init_msg_prompt(
+                        sys_prompt=_llm.sys_prompt,
+                    )
+                case _:
+                    return StandardResponse(code=1, status="error", message="Invalid request type")
+
+            chain = LLMChain(
+                name="multi_turn_chat_llm_chain",
+                llm=llm,
+                prompt=prompt,
+                memory=memory,
+                verbose=True,
+                return_final_only=True,
+            )
+        except Exception as e:
+            logger.error(f"Init langchain modules failed: {e}")
+            return StandardResponse(code=1, status="error", message="Chat init failed")
 
     async def _sse_response():
         try:
