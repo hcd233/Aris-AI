@@ -89,6 +89,8 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
 
         data = {"llm_id": llm.llm_id}
         r.hset(redis_hashmap, request.llm_name, llm.llm_id)
+        redis_key = f"llm_id:{llm.llm_id}"
+        r.delete(redis_key)
 
     return StandardResponse(code=0, status="success", message="Create LLM successfully", data=data)
 
