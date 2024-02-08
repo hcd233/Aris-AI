@@ -4,7 +4,7 @@ from internal.config import DEBUG_MODE
 from internal.logger import logger
 
 from .router import root_router, v1_router
-
+from internal.middleware.logger import LoggerMiddleWare
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -19,6 +19,9 @@ def create_app() -> FastAPI:
     # add routers
     app.include_router(root_router)
     app.include_router(v1_router)
+
+    # add middlewares
+    app.add_middleware(LoggerMiddleWare)
 
     logger.info("Init app successfully")
     return app

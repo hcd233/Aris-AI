@@ -4,13 +4,13 @@ from sys import stdout
 from loguru import _Logger
 from loguru import logger as _logger
 
-from internal.config import LOG_LEVEL, LOG_ROOT
+from internal.config import LOGGER_LEVEL, LOGGER_ROOT
 
 from .logger import ERROR_LOG, INFO_LOG, LOG_FORMAT
 
 
 def init_logger() -> _Logger:
-    log_root = Path(LOG_ROOT)
+    log_root = Path(LOGGER_ROOT)
 
     if not log_root.exists():
         log_root.mkdir(parents=True)
@@ -18,7 +18,7 @@ def init_logger() -> _Logger:
         raise ValueError("LOG_ROOT is not a directory")
 
     _logger.remove()  # remove origin handler
-    _logger.add(stdout, colorize=True, enqueue=True, level=LOG_LEVEL, format=LOG_FORMAT)
+    _logger.add(stdout, colorize=True, enqueue=True, level=LOGGER_LEVEL, format=LOG_FORMAT)
     _logger.add(log_root.joinpath(INFO_LOG), encoding="utf-8", rotation="10MB", enqueue=True, level="INFO", format=LOG_FORMAT)
     _logger.add(log_root.joinpath(ERROR_LOG), encoding="utf-8", rotation="10MB", enqueue=True, level="ERROR", format=LOG_FORMAT)
 
