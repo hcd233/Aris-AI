@@ -54,6 +54,7 @@ def init_webui():
         "temperature": 0.7,
         "session_id": None,
         "history": [],
+        "bind_llm": None,
     }
 
     for var, def_val in vars.items():
@@ -68,7 +69,7 @@ def sidebar():
     st.sidebar.header("Sessions")
     sessions = get_sessions(cache.api_key)
     cache.session_id = st.sidebar.selectbox("Select session", options=sessions)
-
+    cache.bind_llm, cache.history = get_history(cache.api_key, cache.session_id)
     new_session_onclick = st.sidebar.button("New Chat", key="new_chat")
     if new_session_onclick:
         cache.session_id = new_session(cache.api_key)
@@ -77,7 +78,10 @@ def sidebar():
 
     st.sidebar.header("LLMs")
     llms = get_llms(cache.api_key)
-    cache.llm = st.sidebar.selectbox("Select llm", options=llms)
+    if cache.bind_llm:
+        st.sidebar.info(f"Bind LLM: {cache.bind_llm}")
+        llms = [cache.bind_llm]
+    cache.llm = st.sidebar.selectbox("Select llm", options=llms, disabled=cache.bind_llm is not None)
 
     st.sidebar.header("Temperature")
     cache.temperature = st.sidebar.slider("Temperature", min_value=0.0, max_value=1.0, value=0.7, step=0.05)
@@ -87,7 +91,6 @@ def body():
     if not cache.session_id:
         st.info("Please create or select a session")
         return
-    cache.history = get_history(cache.api_key, cache.session_id)
     container = st.container(height=700, border=False)
     for message in cache.history:
         role, content = message.get("role"), message.get("content")

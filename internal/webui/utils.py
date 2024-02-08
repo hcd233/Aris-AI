@@ -1,5 +1,5 @@
 from json import loads
-from typing import Any, Dict, Iterator, List, Literal
+from typing import Any, Dict, Iterator, List, Literal, Tuple
 from urllib.parse import urljoin
 
 import requests
@@ -65,7 +65,7 @@ def get_sessions(
     return sessions
 
 
-def get_history(api_key: str, session_id: int) -> List[Dict[Literal["role", "content"], str]]:
+def get_history(api_key: str, session_id: int) -> Tuple[int, List[Dict[Literal["role", "content"], str]]]:
     url = urljoin(API_URL, f"v1/session/{session_id}")
     headers = {"Authorization": f"Bearer {api_key}"}
 
@@ -76,10 +76,10 @@ def get_history(api_key: str, session_id: int) -> List[Dict[Literal["role", "con
 
     data = parse_response(response, f"get session {session_id}'s history")
 
-    messages = data.get("messages")
+    bind_llm, messages = data.get("bind_llm"), data.get("messages")
     messages = [{field: message["message"][field] for field in ("role", "content")} for message in messages]
 
-    return messages
+    return bind_llm, messages
 
 
 def new_session(api_key: str) -> int:
