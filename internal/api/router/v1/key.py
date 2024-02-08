@@ -14,7 +14,7 @@ from ...model.request import UidRequest
 key_router = APIRouter(prefix="/key", tags=["key"])
 
 
-@key_router.post("/newSecretKey", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
+@key_router.post("", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
 def generate_api_key(request: UidRequest, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
     _uid, _ = info
     if _uid != request.uid:

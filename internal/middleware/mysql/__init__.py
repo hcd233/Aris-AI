@@ -10,6 +10,7 @@ from .model import BaseSchema
 MYSQL_LINK = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 
 
+@logger.catch
 def init_mysql_session() -> sessionmaker[Session]:
 
     engine = create_engine(
