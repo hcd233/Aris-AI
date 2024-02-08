@@ -10,7 +10,7 @@ from sqlalchemy import or_
 
 from internal.langchain.llm import init_llm
 from internal.langchain.memory import init_history, init_msg_memory, init_str_memory
-from internal.langchain.prompt import init_msg_prompt,init_str_prompt
+from internal.langchain.prompt import init_msg_prompt, init_str_prompt
 from internal.logger import logger
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSchema
