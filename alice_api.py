@@ -1,15 +1,16 @@
 import uvicorn
 
+from internal.api import create_app
 from internal.config import API_PORT
 
 
 def main() -> None:
-    # same as from internal.api import create_app
+    app = create_app()
     uvicorn.run(
-        "internal.api:create_app",
+        app,
         host="0.0.0.0",
         port=API_PORT,
-        reload=True,
+        log_level="critical",
     )
 
 
