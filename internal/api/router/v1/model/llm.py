@@ -92,7 +92,7 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
         redis_key = f"llm_id:{llm.llm_id}"
         r.delete(redis_key)
 
-    return StandardResponse(code=0, status="success", message="Create LLM successfully", data=data)
+    return StandardResponse(code=0, status="success", data=data)
 
 
 @llm_router.get("/llms", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
@@ -101,72 +101,71 @@ async def get_llm_list():
 
     if r.exists(redis_hashmap):
         result = r.hgetall(redis_hashmap)
-        llm_list = [{"llm_id": v, "llm_name": k} for k, v in result.items()]
+        data = {"llm_list": [{"llm_id": v, "llm_name": k} for k, v in result.items()]}
+        return StandardResponse(code=0, status="success", data=data)
 
-    else:
-        with session() as conn:
-            if not conn.is_active:
-                conn.rollback()
-                conn.close()
-            else:
-                conn.commit()
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
 
-            query = conn.query(LLMSchema.llm_id, LLMSchema.llm_name).filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
-            result = query.all()
+        query = conn.query(LLMSchema.llm_id, LLMSchema.llm_name).filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
+        result = query.all()
 
-        llm_list = [{"llm_id": llm_id, "llm_name": llm_name} for (llm_id, llm_name) in result]
-        for llm in llm_list:
-            r.hset(redis_hashmap, llm["llm_name"], llm["llm_id"])
+    llm_list = [{"llm_id": llm_id, "llm_name": llm_name} for (llm_id, llm_name) in result]
+    for llm in llm_list:
+        r.hset(redis_hashmap, llm["llm_name"], llm["llm_id"])
     data = {"llm_list": llm_list}
 
-    return StandardResponse(code=0, status="success", message="Get llm list successfully", data=data)
+    return StandardResponse(code=0, status="success", data=data)
 
 
 @llm_router.get("/{llm_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def get_llm_info(llm_id: int):
-
     redis_key = f"llm_id:{llm_id}"
     info = r.get(redis_key)
-    match info:
-        case "not_exist":
-            return StandardResponse(code=1, status="error", message=f"LLM id: {llm_id} not exist")
 
-        case None:
-            with session() as conn:
-                if not conn.is_active:
-                    conn.rollback()
-                    conn.close()
-                else:
-                    conn.commit()
+    if info == "not_exist":
+        return StandardResponse(code=1, status="error", message=f"LLM id: {llm_id} not exist")
 
-                query = (
-                    conn.query(
-                        LLMSchema.llm_name,
-                        func.date(LLMSchema.create_at),
-                        func.date(LLMSchema.update_at),
-                        LLMSchema.max_tokens,
-                    )
-                    .filter(LLMSchema.llm_id == llm_id)
-                    .filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
-                )
-                result = query.first()
+    if info is not None:
+        data = loads(info)
+        return StandardResponse(code=0, status="success", data=data)
 
-            if not result:
-                r.set(redis_key, "not_exist")
-                return StandardResponse(code=1, status="error", message=f"LLM id: {llm_id} not exist")
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
 
-            name, create_at, update_at, max_tokens = result
-            data = {
-                "llm_id": llm_id,
-                "llm_name": name,
-                "create_at": str(create_at),
-                "update_at": str(update_at),
-                "max_tokens": max_tokens,
-            }
+        query = (
+            conn.query(
+                LLMSchema.llm_name,
+                func.date(LLMSchema.create_at),
+                func.date(LLMSchema.update_at),
+                LLMSchema.max_tokens,
+            )
+            .filter(LLMSchema.llm_id == llm_id)
+            .filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
+        )
+        result = query.first()
 
-            r.set(redis_key, dumps(data, ensure_ascii=False))
+    if not result:
+        r.set(redis_key, "not_exist", ex=300)
+        return StandardResponse(code=1, status="error", message=f"LLM id: {llm_id} not exist")
 
-        case _:
-            data = loads(info)
+    name, create_at, update_at, max_tokens = result
+    data = {
+        "llm_id": llm_id,
+        "llm_name": name,
+        "create_at": str(create_at),
+        "update_at": str(update_at),
+        "max_tokens": max_tokens,
+    }
 
-    return StandardResponse(code=0, status="success", message="Get llm info successfully", data=data)
+    r.set(redis_key, dumps(data, ensure_ascii=False), ex=300)
+
+    return StandardResponse(code=0, status="success", data=data)

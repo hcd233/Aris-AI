@@ -89,7 +89,7 @@ def create_embedding(request: CreateEmbeddingRequest, info: Tuple[int, int] = De
         redis_key = f"embed_id:{embedding.embedding_id}"
         r.delete(redis_key)
 
-    return StandardResponse(code=0, status="success", message="Create Embedding successfully", data=data)
+    return StandardResponse(code=0, status="success", data=data)
 
 
 @embedding_router.get("/embeddings", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
@@ -124,54 +124,53 @@ async def get_embedding_list():
 
     data = {"embedding_list": embedding_list}
 
-    return StandardResponse(code=0, status="success", message="Get Embedding list successfully", data=data)
+    return StandardResponse(code=0, status="success", data=data)
 
 
 @embedding_router.get("/{embedding_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def get_embedding_info(embedding_id: int):
-
     redis_key = f"embed_id:{embedding_id}"
     info = r.get(redis_key)
-    match info:
-        case "not_exist":
-            return StandardResponse(code=1, status="error", message=f"Embedding id: {embedding_id} not exist")
+    
+    if info == "not_exist":
+        return StandardResponse(code=1, status="error", message=f"Embedding id: {embedding_id} not exist")
+    
+    if info is not None:
+        data = loads(info)
+        return StandardResponse(code=0, status="success", data=data)
+    
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
 
-        case None:
-            with session() as conn:
-                if not conn.is_active:
-                    conn.rollback()
-                    conn.close()
-                else:
-                    conn.commit()
+        query = (
+            conn.query(
+                EmbeddingSchema.embedding_name,
+                func.date(EmbeddingSchema.create_at),
+                func.date(EmbeddingSchema.update_at),
+                EmbeddingSchema.chunk_size,
+                EmbeddingSchema.embed_dim,
+            )
+            .filter(EmbeddingSchema.embedding_id == embedding_id)
+            .filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.now() < EmbeddingSchema.delete_at))
+        )
+        result = query.first()
 
-                query = (
-                    conn.query(
-                        EmbeddingSchema.embedding_name,
-                        func.date(EmbeddingSchema.create_at),
-                        func.date(EmbeddingSchema.update_at),
-                        EmbeddingSchema.chunk_size,
-                        EmbeddingSchema.embed_dim,
-                    )
-                    .filter(EmbeddingSchema.embedding_id == embedding_id)
-                    .filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.now() < EmbeddingSchema.delete_at))
-                )
-                result = query.first()
+    if not result:
+        return StandardResponse(code=1, status="error", message=f"Embedding id: {embedding_id} not exist")
 
-            if not result:
-                return StandardResponse(code=1, status="error", message=f"Embedding id: {embedding_id} not exist")
+    embedding_name, create_at, update_at, chunk_size, embed_dim = result
+    data = {
+        "embedding_id": embedding_id,
+        "embedding_name": embedding_name,
+        "create_at": str(create_at),
+        "update_at": str(update_at),
+        "chunk_size": chunk_size,
+        "embed_dim": embed_dim,
+    }
+    r.set(redis_key, dumps(data, ensure_ascii=False), ex=300)
 
-            embedding_name, create_at, update_at, chunk_size, embed_dim = result
-            data = {
-                "embedding_id": embedding_id,
-                "embedding_name": embedding_name,
-                "create_at": str(create_at),
-                "update_at": str(update_at),
-                "chunk_size": chunk_size,
-                "embed_dim": embed_dim,
-            }
-            r.set(redis_key, dumps(data, ensure_ascii=False))
-
-        case _:
-            data = loads(info)
-
-    return StandardResponse(code=0, status="success", message="Get Embedding info successfully", data=data)
+    return StandardResponse(code=0, status="success", data=data)

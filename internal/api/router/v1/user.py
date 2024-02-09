@@ -59,7 +59,7 @@ def login_user(request: UserRequest) -> StandardResponse:
 
     data = {"uid": uid, "token": encode_token(uid=uid, level=is_admin)}
 
-    return StandardResponse(code=0, status="success", message="Login successfully", data=data)
+    return StandardResponse(code=0, status="success", data=data)
 
 
 @user_router.get("/{uid}/keys", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
