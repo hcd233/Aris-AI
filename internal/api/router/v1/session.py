@@ -9,11 +9,14 @@ from langchain_openai import ChatOpenAI
 from sqlalchemy import or_
 
 from internal.langchain.llm import init_llm
-from internal.langchain.memory import init_history, init_msg_memory, init_str_memory
+from internal.langchain.memory import (init_history, init_msg_memory,
+                                       init_str_memory)
 from internal.langchain.prompt import init_msg_prompt, init_str_prompt
 from internal.logger import logger
 from internal.middleware.mysql import session
-from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSchema
+from internal.middleware.mysql.model import (LLMSchema, MessageSchema,
+                                             SessionSchema)
+from internal.middleware.redis import r
 
 from ...auth import sk_auth
 from ...model.request import ChatRequest
@@ -26,6 +29,32 @@ session_router = APIRouter(prefix="/session", tags=["session"])
 async def create_session(info: Tuple[int, int] = Depends(sk_auth)):
     uid, _ = info
 
+    redis_set = f"uid:{uid}:session_ids"
+    if r.exists(redis_set):
+        count = len(r.smembers(redis_set))
+        if count >= 40:
+            return StandardResponse(code=1, status="error", message="Your session list is full(40), please delete some sessions first.")
+    else:
+        with session() as conn:
+            if not conn.is_active:
+                conn.rollback()
+                conn.close()
+            else:
+                conn.commit()
+
+            # count session
+            query = (
+                conn.query(SessionSchema.session_id)
+                .filter(SessionSchema.uid == uid)
+                .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            )
+            results = query.all()
+            for result in results:
+                r.sadd(redis_set, result[0])
+
+            if len(results) >= 40:
+                return StandardResponse(code=1, status="error", message="Your session list is full(40), please delete some sessions first")
+
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
@@ -37,13 +66,25 @@ async def create_session(info: Tuple[int, int] = Depends(sk_auth)):
         conn.add(_session)
         conn.commit()
         data = {"session_id": _session.session_id, "create_at": _session.create_at}
+        r.sadd(redis_set, _session.session_id)
+        r.delete(f"session:{_session.session_id}")
 
-    return StandardResponse(code=0, status="success", message="Create session successfully", data=data)
+    r.delete(f"uid:{uid}:sessions")
+    
+    return StandardResponse(code=0, status="success", data=data)
 
 
 @session_router.get("/sessions", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def list_session(page_id: int = 0, per_page_num: int = 20, info: Tuple[int, int] = Depends(sk_auth)):
     uid, _ = info
+    redis_set = f"uid:{uid}:sessions"
+    if r.exists(redis_set):
+        if session_list := r.zrange(redis_set, page_id * per_page_num, (page_id + 1) * per_page_num - 1, desc=True):
+            return StandardResponse(
+                code=0,
+                status="success",
+                data={"session_list": [loads(s) for s in session_list]},
+            )
 
     with session() as conn:
         if not conn.is_active:
@@ -61,22 +102,32 @@ async def list_session(page_id: int = 0, per_page_num: int = 20, info: Tuple[int
         )
         result = query.limit(per_page_num).all()
 
-    data = {
-        "session_list": [
-            {
-                "session_id": session_id,
-                "create_at": create_at,
-                "last_chat_at": update_at,
-            }
-            for session_id, create_at, update_at in result
-        ]
-    }
-    return StandardResponse(code=0, status="success", message="Get session list successfully", data=data)
+    session_list = [
+        {
+            "session_id": session_id,
+            "create_at": str(create_at),
+            "last_chat_at": str(update_at),
+        }
+        for session_id, create_at, update_at in result
+    ]
+    for s in session_list:
+        r.zadd(redis_set, {dumps(s, ensure_ascii=False): s["session_id"]})
+
+    data = {"session_list": session_list}
+    return StandardResponse(code=0, status="success", data=data)
 
 
 @session_router.get("/{session_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth)):
-    uid, level = info
+    uid, _ = info
+
+    redis_key = f"session:{session_id}"
+    info = r.get(redis_key)
+    if info == "not_exist":
+        return StandardResponse(code=1, status="error", message="Session not exist")
+    if info:
+        data = loads(info)
+        return StandardResponse(code=0, status="success", data=data)
 
     with session() as conn:
         if not conn.is_active:
@@ -95,6 +146,7 @@ async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth))
         result = query.first()
 
         if not result:
+            r.set(redis_key, "not_exist", ex=20)
             return StandardResponse(code=1, status="error", message="Session not exist")
 
         session_id, create_at, update_at, llm_name = result
@@ -104,42 +156,62 @@ async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth))
 
         parse_message_func: Callable[[Dict[str, Any]], Dict[str, Any]] = lambda x: {"role": x.get("type"), "content": x.get("data").get("content")}
         messages = [
-            {"message_id": message_id, "chat_at": chat_at, "message": parse_message_func(loads(message))} for message_id, chat_at, message in results
+            {"message_id": message_id, "chat_at": str(chat_at), "message": parse_message_func(loads(message))}
+            for message_id, chat_at, message in results
         ]
 
     data = {
         "session_id": session_id,
-        "create_at": create_at,
-        "update_at": update_at,
+        "create_at": str(create_at),
+        "update_at": str(update_at),
         "bind_llm": llm_name,
         "messages": messages,
     }
-    return StandardResponse(code=0, status="success", message="Get session successfully", data=data)
+
+    r.set(redis_key, dumps(data, ensure_ascii=False), ex=300)
+
+    return StandardResponse(code=0, status="success", data=data)
 
 
 @session_router.delete("/{session_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def delete_session(uid: int, session_id: int, info: Tuple[int, int] = Depends(sk_auth)):
+async def delete_session(session_id: int, uid: int = -1, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
     if not (level or _uid == uid):
         return StandardResponse(code=1, status="error", message="no permission")
 
+    if uid == -1:
+        uid = _uid
+
+    redis_set = f"uid:{uid}:session_ids"
+    if r.exists(redis_set):
+        if not r.sismember(redis_set, session_id):
+            return StandardResponse(code=1, status="error", message="Session not exist")
+
+        r.srem(redis_set, session_id)
+    else:
+        with session() as conn:
+            if not conn.is_active:
+                conn.rollback()
+                conn.close()
+            else:
+                conn.commit()
+
+            query = (
+                conn.query(SessionSchema.session_id, SessionSchema.delete_at)
+                .filter(SessionSchema.session_id == session_id)
+                .filter(SessionSchema.uid == uid)
+                .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            )
+
+            if not query.first():
+                return StandardResponse(code=1, status="error", message="Session not exist")
+            
     with session() as conn:
         if not conn.is_active:
             conn.rollback()
             conn.close()
         else:
             conn.commit()
-
-        query = (
-            conn.query(SessionSchema.session_id, SessionSchema.delete_at)
-            .filter(SessionSchema.session_id == session_id)
-            .filter(SessionSchema.uid == uid)
-            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
-        )
-
-        if not query.first():
-            return StandardResponse(code=1, status="error", message="Session not exist")
-
         query = (
             conn.query(SessionSchema)
             .filter(SessionSchema.session_id == session_id)
@@ -149,6 +221,9 @@ async def delete_session(uid: int, session_id: int, info: Tuple[int, int] = Depe
         query.update({SessionSchema.delete_at: datetime.datetime.now()})
         conn.commit()
 
+    r.delete(f"session:{session_id}")
+    r.delete(f"uid:{uid}:sessions")
+    
     return StandardResponse(code=0, status="success", message="Delete session successfully")
 
 
@@ -212,7 +287,7 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
                         ai_name=_llm.ai_name,
                         user_name=_llm.user_name,
                         k=8,
-                        )
+                    )
                     prompt = init_str_prompt(
                         sys_name=_llm.sys_name,
                         sys_prompt=_llm.sys_prompt,
