@@ -18,7 +18,7 @@ user_router = APIRouter(prefix="/user", tags=["user"])
 @user_router.post("/register", response_model=StandardResponse)
 def register_user(request: UserRequest) -> StandardResponse:
     with session() as conn:
-        query = conn.query(UserSchema.user).filter(UserSchema.user == request.user)
+        query = conn.query(UserSchema.user_name).filter(UserSchema.user_name == request.user_name)
         exist_user = query.first()
 
     if exist_user:
@@ -31,7 +31,7 @@ def register_user(request: UserRequest) -> StandardResponse:
         else:
             conn.commit()
 
-        user = UserSchema(user=request.user, password=request.password)
+        user = UserSchema(user_name=request.user, password=request.password)
         conn.add(user)
         conn.commit()
 
@@ -48,7 +48,7 @@ def login_user(request: UserRequest) -> StandardResponse:
             conn.commit()
 
         query = (
-            conn.query(UserSchema.uid, UserSchema.is_admin).filter(UserSchema.user == request.user).filter(UserSchema.password == request.password)
+            conn.query(UserSchema.uid, UserSchema.is_admin).filter(UserSchema.user_name == request.user).filter(UserSchema.password == request.password)
         )
         result = query.first()
 
