@@ -84,4 +84,4 @@ def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> Sta
     fields = ("api_key_id", "api_key_secret", "create_at", "expire_at")
     data = {"uid": uid, "api_key_list": [dict(zip(fields, row)) for row in result]}
 
-    return StandardResponse(code=0, status="success", message="List api key successfully", data=data)
+    return StandardResponse(code=0, status="success", data=data)
