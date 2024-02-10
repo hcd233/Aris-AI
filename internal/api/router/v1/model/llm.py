@@ -43,6 +43,7 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
                 .filter(LLMSchema.llm_name == request.llm_name)
                 .filter(LLMSchema.api_key == request.api_key)
                 .filter(LLMSchema.base_url == request.base_url)
+                .filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
             )
             result = query.first()
 

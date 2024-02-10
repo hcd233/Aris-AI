@@ -42,6 +42,7 @@ def create_embedding(request: CreateEmbeddingRequest, info: Tuple[int, int] = De
                 .filter(EmbeddingSchema.embedding_name == request.embedding_name)
                 .filter(EmbeddingSchema.api_key == request.api_key)
                 .filter(EmbeddingSchema.base_url == request.base_url)
+                .filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.now() < EmbeddingSchema.delete_at))
             )
             result = query.first()
 
