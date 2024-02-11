@@ -17,6 +17,11 @@ pyjwt = "^2.8.0"
 langchain-openai = "^0.0.5"
 streamlit = "^1.31.0"
 redis = "^5.0.1"
+faiss-cpu = "^1.7.4"
+python-multipart = "^0.0.9"
+pdfminer-six = "^20231228"
+unstructured = {version = "^0.12.4", python = ">=3.11,<3.12"}
+markdown = "^3.5.2"
 
 
 [build-system]
