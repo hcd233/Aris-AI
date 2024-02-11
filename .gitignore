@@ -1,7 +1,9 @@
 # Dirs
 .vscode
+faiss
 __pycache__
 # Files
 *.env
 *.log
 *.conf
+*.sh
