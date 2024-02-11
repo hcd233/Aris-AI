@@ -37,6 +37,12 @@ class CreateEmbeddingRequest(BaseModel):
     embed_dim: int
 
 
+class CreateVectorDbRequest(BaseModel):
+    vector_db_name: str
+    embedding_name: str
+    vector_db_description: str = ""
+
+
 class ChatRequest(BaseModel):
     llm_name: str
     temperature: float
