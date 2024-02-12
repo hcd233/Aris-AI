@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Literal
 
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.memory.chat_memory import BaseChatMemory
@@ -40,21 +40,25 @@ def init_history(session_id: int) -> BaseChatMessageHistory:
     return history
 
 
-def init_str_memory(history: BaseChatMessageHistory, user_name: str, ai_name: str, **kwargs) -> BaseChatMemory:
-    memory = ConversationBufferWindowMemory(
-        chat_memory=history,
-        human_prefix=user_name,
-        ai_prefix=ai_name,
-        return_messages=False,
-        **kwargs,
-    )
-    return memory
+def init_chat_memory(
+    history: BaseChatMessageHistory, request_type: Literal["message", "string"], user_name: str, ai_name: str, **kwargs
+) -> BaseChatMemory:
+    match request_type:
+        case "message":
+            memory = ConversationBufferWindowMemory(
+                chat_memory=history,
+                return_messages=True,
+                **kwargs,
+            )
+        case "string":
+            memory = ConversationBufferWindowMemory(
+                chat_memory=history,
+                human_prefix=user_name,
+                ai_prefix=ai_name,
+                return_messages=False,
+                **kwargs,
+            )
+        case _:
+            raise ValueError(f"Invalid request_type: {request_type}")
 
-
-def init_msg_memory(history: BaseChatMessageHistory, **kwargs) -> BaseChatMemory:
-    memory = ConversationBufferWindowMemory(
-        chat_memory=history,
-        return_messages=True,
-        **kwargs,
-    )
     return memory
