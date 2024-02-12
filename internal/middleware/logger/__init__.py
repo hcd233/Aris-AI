@@ -17,7 +17,7 @@ class LoggerMiddleWare(BaseHTTPMiddleware):
         log = f"{request.method} {response.status_code} {request.client.host} -> {request.url.path} {latency}"
         match response.status_code:
             case 200:
-                logger_func = logger.info
+                logger_func = logger.success
             case 500:
                 logger_func = logger.error
             case _:
