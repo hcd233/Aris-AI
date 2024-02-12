@@ -1,16 +1,17 @@
 import datetime
 from json import dumps, loads
-from typing import Any, Callable, Dict, List, Tuple
+from threading import Thread
+from typing import Any, Callable, Dict, Tuple
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from langchain.chains.base import Chain
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.messages.base import BaseMessage
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from sqlalchemy import or_
 
+from internal.langchain.callback import StreamCallbackHandler, TokenGenerator
 from internal.langchain.chain import init_chat_chain, init_retriever_qa_chain
 from internal.langchain.embedding import init_embedding
 from internal.langchain.llm import init_llm
@@ -232,38 +233,6 @@ async def delete_session(session_id: int, uid: int = -1, info: Tuple[int, int] =
     return StandardResponse(code=0, status="success", message="Delete session successfully")
 
 
-@logger.catch
-async def _sse_response(chain: Chain, user_prompt: str, redis_lock: str, session_id: int, history: BaseChatMessageHistory = None):
-    async for chunk in chain.astream_events(
-        {"user_prompt": user_prompt},
-        version="v1",
-    ):
-        event, name, run_id = chunk.get("event"), chunk.get("name"), chunk.get("run_id")
-        data = {"extras": {"name": name, "chat_id": run_id, "event": event, "session_id": session_id}}
-        if event == "on_chat_model_start":
-            data.update({"delta": "", "status": "start"})
-        elif event == "on_chat_model_stream":
-            delta = chunk["data"]["chunk"].content
-            data.update({"delta": delta, "status": "generating"})
-        elif event == "on_chat_model_end":
-            if history:
-                input_messages: List[BaseMessage] = chunk["data"]["input"]["messages"][0]
-                output_message: BaseMessage = chunk["data"]["output"]["generations"][0][0]["message"]
-                for message in input_messages + [output_message]:
-                    history.add_message(message)
-            logger.debug(f"Chat finished: {chunk}")
-
-            data.update({"delta": "", "status": "finished"})
-        else:
-            continue
-
-        data = dumps(data, ensure_ascii=False) + "\n"
-        logger.debug(f"SSE response: {data}")
-
-        yield data
-    r.delete(redis_lock)
-
-
 @session_router.post("/{session_id}/chat", dependencies=[Depends(sk_auth)])
 async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = Depends(sk_auth)) -> StandardResponse | SSEResponse:
     _uid, _ = info
@@ -313,6 +282,9 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
             logger.debug(f"Bind LLM: {request.llm_name} to Session: {session_id}")
 
         try:
+            token_generator = TokenGenerator(redis_lock=redis_lock)
+            callback = StreamCallbackHandler(token_generator)
+
             llm: ChatOpenAI = init_llm(
                 llm_type=_llm.llm_type,
                 llm_name=_llm.llm_name,
@@ -320,8 +292,8 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
                 api_key=_llm.api_key,
                 temperature=request.temperature,
                 max_tokens=_llm.max_tokens,
+                callbacks=[callback],
             )
-
             history = init_history(session_id=session_id)
 
             memory = init_chat_memory(
@@ -343,6 +315,7 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
                 llm=llm,
                 prompt=prompt,
                 memory=memory,
+                callbacks=[callback],
             )
         except Exception as e:
             logger.error(f"Init langchain modules failed: {e}")
@@ -351,8 +324,8 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
     r.delete(f"session:{session_id}")
     r.delete(f"uid:{_uid}:sessions")
 
-    sse_generator = _sse_response(chain, request.message, redis_lock, session_id)
-    return StreamingResponse(sse_generator, media_type="text/event-stream")
+    Thread(target=chain.invoke, args=(request.message,)).start()
+    return StreamingResponse(token_generator, media_type="text/event-stream")
 
 
 @session_router.post("/{session_id}/retriever-qa", dependencies=[Depends(sk_auth)])
@@ -424,6 +397,9 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
             return StandardResponse(code=1, status="error", message="Embedding not exist")
 
         try:
+            token_generator = TokenGenerator(redis_lock=redis_lock)
+            callback = StreamCallbackHandler(token_generator)
+
             llm: ChatOpenAI = init_llm(
                 llm_type=_llm.llm_type,
                 llm_name=_llm.llm_name,
@@ -431,6 +407,7 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
                 api_key=_llm.api_key,
                 temperature=request.temperature,
                 max_tokens=_llm.max_tokens,
+                callbacks=[callback],
             )
             if not llm:
                 return StandardResponse(code=1, status="error", message="LLM init failed")
@@ -461,7 +438,12 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
                 embedding=embedding,
             )
 
-            chain = init_retriever_qa_chain(llm=llm, prompt=prompt, retriever=retriever)
+            chain = init_retriever_qa_chain(
+                llm=llm,
+                prompt=prompt,
+                retriever=retriever,
+                callbacks=[callback],
+            )
 
         except Exception as e:
             logger.error(f"Init langchain modules failed: {e}")
@@ -470,5 +452,11 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
     r.delete(f"session:{session_id}")
     r.delete(f"uid:{_uid}:sessions")
 
-    sse_generator = _sse_response(chain, request.message, redis_lock, session_id, history)
-    return StreamingResponse(sse_generator, media_type="text/event-stream")
+    def _chat_after_save_history(chain: Chain, user_prompt: str, history: BaseChatMessageHistory):
+        output = chain.invoke(user_prompt)
+        docs, llm_output = "\n\n".join(output["source_documents"]), output["result"]
+        history.add_user_message(f"Retriever Docs: {docs}\nUser Prompt: {user_prompt}")
+        history.add_ai_message(llm_output)
+
+    Thread(target=_chat_after_save_history, args=(chain, request.message, history)).start()
+    return StreamingResponse(token_generator, media_type="text/event-stream")
