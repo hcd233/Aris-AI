@@ -11,6 +11,6 @@ class StandardResponse(BaseModel):
 
 
 class SSEResponse(BaseModel):
-    extras: Dict[str, Any] | None = None
-    delta: str
     status: str
+    delta: str
+    extras: Dict[str, Any]
