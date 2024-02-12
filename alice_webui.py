@@ -3,7 +3,7 @@ from typing import Any, Dict
 import streamlit as st
 from streamlit import session_state as cache
 
-from internal.webui.utils import chat, get_history, get_llms, get_sessions, new_session
+from internal.webui.utils import chat, get_history, get_llms, get_sessions, new_session, retriever_qa, get_vector_db
 
 ABOUT = """\
 ### Alice AI是由lvlvko研发的大语言模型，提供api和webui服务
@@ -83,6 +83,12 @@ def sidebar():
         llms = [cache.bind_llm]
     cache.llm = st.sidebar.selectbox("Select llm", options=llms, disabled=cache.bind_llm is not None)
 
+    st.sidebar.header("VectorStore")
+    vector_stores = get_vector_db(cache.api_key)
+
+    vector_db_name = st.sidebar.selectbox("Select vector store", options=list(vector_stores.keys()))
+    cache.vector_db_id = vector_stores.get(vector_db_name)
+
     st.sidebar.header("Temperature")
     cache.temperature = st.sidebar.slider("Temperature", min_value=0.0, max_value=1.0, value=0.7, step=0.05)
 
@@ -116,15 +122,27 @@ def body():
         with container.chat_message("ai"):
             resp = ""
             place_holder = st.empty()
-            for token in chat(
-                api_key=cache.api_key,
-                session_id=cache.session_id,
-                llm_name=cache.llm,
-                message=prompt,
-                temperature=cache.temperature,
-            ):
-                resp += token
-                place_holder.markdown(resp)
+            if not cache.vector_db_id:
+                for token in chat(
+                    api_key=cache.api_key,
+                    session_id=cache.session_id,
+                    llm_name=cache.llm,
+                    message=prompt,
+                    temperature=cache.temperature,
+                ):
+                    resp += token
+                    place_holder.markdown(resp)
+            else:
+                for token in retriever_qa(
+                    api_key=cache.api_key,
+                    session_id=cache.session_id,
+                    llm_name=cache.llm,
+                    message=prompt,
+                    temperature=cache.temperature,
+                    vector_db_id=cache.vector_db_id,
+                ):
+                    resp += token
+                    place_holder.markdown(resp)
 
 
 def main():

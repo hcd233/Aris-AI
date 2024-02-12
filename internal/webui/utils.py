@@ -43,6 +43,21 @@ def get_llms(api_key: str) -> List[str]:
     return llms
 
 
+def get_vector_db(api_key: str) -> Dict[str, int]:
+    url = urljoin(API_URL, "v1/vector-db/vector-dbs")
+    headers = {"Authorization": f"Bearer {api_key}"}
+    response = requests.get(
+        url=url,
+        headers=headers,
+    )
+
+    data = parse_response(response, "get vector dbs")
+
+    llms = data.get("vector_db_list")
+    llms = {llm.get("vector_db_name"): llm.get("vector_db_id") for llm in llms}
+    return llms
+
+
 def get_sessions(
     api_key: str,
     page_id: int = 0,
@@ -103,6 +118,30 @@ def chat(api_key: str, session_id: int, message: str, llm_name: str, temperature
         "message": message,
         "llm_name": llm_name,
         "temperature": temperature,
+    }
+
+    response = requests.post(
+        url=url,
+        headers=headers,
+        json=data,
+        stream=True,
+    )
+
+    for chunk in response.iter_lines():
+        if not chunk:
+            continue
+        chunk = loads(chunk.decode("utf-8"))
+        yield chunk.get("delta", "")
+
+
+def retriever_qa(api_key: str, session_id: int, message: str, llm_name: str, temperature: float, vector_db_id: int):
+    url = urljoin(API_URL, f"v1/session/{session_id}/retriever-qa")
+    headers = {"Authorization": f"Bearer {api_key}"}
+    data = {
+        "message": message,
+        "llm_name": llm_name,
+        "temperature": temperature,
+        "vector_db_id": vector_db_id,
     }
 
     response = requests.post(
