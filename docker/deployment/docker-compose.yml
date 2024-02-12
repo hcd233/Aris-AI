@@ -60,9 +60,9 @@ services:
     env_file:
       - ../../envs/deployment/mysql.env
 
-  debug-alice-ai-redis:
+  alice-ai-redis:
     image: bitnami/redis:latest
-    container_name: debug-alice-ai-redis
+    container_name: alice-ai-redis
     privileged: true
     volumes:
       - redis-data:/data
