@@ -82,6 +82,7 @@ def get_vector_dbs(info: Tuple[str, str] = Depends(sk_auth)):
         query = (
             conn.query(
                 VectorDbSchema.vector_db_id,
+                VectorDbSchema.vector_db_name,
                 VectorDbSchema.create_at,
                 VectorDbSchema.update_at,
             )
@@ -92,10 +93,11 @@ def get_vector_dbs(info: Tuple[str, str] = Depends(sk_auth)):
     vector_db_list = [
         {
             "vector_db_id": vector_db_id,
+            "vector_db_name": vector_db_name,
             "create_at": str(create_at),
             "update_at": str(update_at),
         }
-        for vector_db_id, create_at, update_at in result
+        for vector_db_id, vector_db_name, create_at, update_at in result
     ]
 
     data = {"vector_db_list": vector_db_list}
