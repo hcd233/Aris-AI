@@ -31,7 +31,7 @@ def register_user(request: UserRequest) -> StandardResponse:
         else:
             conn.commit()
 
-        user = UserSchema(user_name=request.user, password=request.password)
+        user = UserSchema(user_name=request.user_name, password=request.password)
         conn.add(user)
         conn.commit()
 
@@ -48,7 +48,7 @@ def login_user(request: UserRequest) -> StandardResponse:
             conn.commit()
 
         query = (
-            conn.query(UserSchema.uid, UserSchema.is_admin).filter(UserSchema.user_name == request.user).filter(UserSchema.password == request.password)
+            conn.query(UserSchema.uid, UserSchema.is_admin).filter(UserSchema.user_name == request.user_name).filter(UserSchema.password == request.password)
         )
         result = query.first()
 
