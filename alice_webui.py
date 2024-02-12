@@ -55,6 +55,7 @@ def init_webui():
         "session_id": None,
         "history": [],
         "bind_llm": None,
+        "vector_db_id": 0,
     }
 
     for var, def_val in vars.items():
@@ -69,12 +70,14 @@ def sidebar():
     st.sidebar.header("Sessions")
     sessions = get_sessions(cache.api_key)
     cache.session_id = st.sidebar.selectbox("Select session", options=sessions)
-    cache.bind_llm, cache.history = get_history(cache.api_key, cache.session_id)
     new_session_onclick = st.sidebar.button("New Chat", key="new_chat")
     if new_session_onclick:
         cache.session_id = new_session(cache.api_key)
         st.success(f"New session created: {cache.session_id}")
         st.rerun()
+
+    if cache.session_id:
+        cache.bind_llm, cache.history = get_history(cache.api_key, cache.session_id)
 
     st.sidebar.header("LLMs")
     llms = get_llms(cache.api_key)
@@ -86,7 +89,7 @@ def sidebar():
     st.sidebar.header("VectorStore")
     vector_stores = get_vector_db(cache.api_key)
 
-    vector_db_name = st.sidebar.selectbox("Select vector store", options=list(vector_stores.keys()))
+    vector_db_name = st.sidebar.selectbox("Select vector store", options=list(vector_stores.keys()), index=None, placeholder="Without vector store")
     cache.vector_db_id = vector_stores.get(vector_db_name)
 
     st.sidebar.header("Temperature")
