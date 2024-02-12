@@ -4,20 +4,25 @@ from typing import Any, Callable, Dict, Tuple
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from langchain.chains import LLMChain
-from langchain_openai import ChatOpenAI
+from langchain.chains.base import Chain
+from langchain_core.vectorstores import VectorStoreRetriever
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from sqlalchemy import or_
 
+from internal.langchain.chain import init_chat_chain, init_retriever_qa_chain
+from internal.langchain.embedding import init_embedding
 from internal.langchain.llm import init_llm
-from internal.langchain.memory import init_history, init_msg_memory, init_str_memory
-from internal.langchain.prompt import init_msg_prompt, init_str_prompt
+from internal.langchain.memory import init_chat_memory, init_history
+from internal.langchain.prompt import init_chat_prompt, init_retriever_prompt
+from internal.langchain.retriever import init_retriever
 from internal.logger import logger
 from internal.middleware.mysql import session
-from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSchema
+from internal.middleware.mysql.model import LLMSchema, MessageSchema, SessionSchema, VectorDbSchema
+from internal.middleware.mysql.model.embeddings import EmbeddingSchema
 from internal.middleware.redis import r
 
 from ...auth import sk_auth
-from ...model.request import ChatRequest
+from ...model.request import ChatRequest, RetrieverQARequest
 from ...model.response import SSEResponse, StandardResponse
 
 session_router = APIRouter(prefix="/session", tags=["session"])
@@ -225,6 +230,30 @@ async def delete_session(session_id: int, uid: int = -1, info: Tuple[int, int] =
     return StandardResponse(code=0, status="success", message="Delete session successfully")
 
 
+@logger.catch
+async def _sse_response(chain: Chain, user_prompt: str, redis_lock: str, session_id: int):
+    async for chunk in chain.astream_events(
+        {"user_prompt": user_prompt},
+        version="v1",
+    ):
+        event, name, run_id = chunk.get("event"), chunk.get("name"), chunk.get("run_id")
+        data = {"extras": {"name": name, "chat_id": run_id, "event": event, "session_id": session_id}}
+        if event == "on_chat_model_start":
+            data.update({"delta": "", "status": "start"})
+        elif event == "on_chat_model_stream":
+            data.update({"delta": chunk.get("data").get("chunk").content, "status": "generating"})
+        elif event == "on_chat_model_end":
+            data.update({"delta": "", "status": "finished"})
+        else:
+            continue
+
+        data = dumps(data, ensure_ascii=False) + "\n"
+        logger.debug(f"SSE response: {data}")
+
+        yield data
+    r.delete(redis_lock)
+
+
 @session_router.post("/{session_id}/chat", dependencies=[Depends(sk_auth)])
 async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = Depends(sk_auth)) -> StandardResponse | SSEResponse:
     _uid, _ = info
@@ -285,69 +314,146 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
 
             history = init_history(session_id=session_id)
 
-            match _llm.request_type:
-                case "string":
-                    memory = init_str_memory(
-                        history=history,
-                        ai_name=_llm.ai_name,
-                        user_name=_llm.user_name,
-                        k=8,
-                    )
-                    prompt = init_str_prompt(
-                        sys_name=_llm.sys_name,
-                        sys_prompt=_llm.sys_prompt,
-                        user_name=_llm.user_name,
-                        ai_name=_llm.ai_name,
-                    )
-                case "message":
-                    memory = init_msg_memory(
-                        history=history,
-                        k=8,
-                    )
-                    prompt = init_msg_prompt(
-                        sys_prompt=_llm.sys_prompt,
-                    )
-                case _:
-                    return StandardResponse(code=1, status="error", message="Invalid request type")
+            memory = init_chat_memory(
+                history=history,
+                request_type=_llm.request_type,
+                user_name=_llm.user_name,
+                ai_name=_llm.ai_name,
+                k=8,
+            )
+            prompt = init_chat_prompt(
+                sys_prompt=_llm.sys_prompt,
+                request_type=_llm.request_type,
+                sys_name=_llm.sys_name,
+                user_name=_llm.user_name,
+                ai_name=_llm.ai_name,
+            )
 
-            chain = LLMChain(
-                name="multi_turn_chat_llm_chain",
+            chain = init_chat_chain(
                 llm=llm,
                 prompt=prompt,
                 memory=memory,
-                verbose=True,
-                return_final_only=True,
             )
         except Exception as e:
             logger.error(f"Init langchain modules failed: {e}")
             return StandardResponse(code=1, status="error", message="Chat init failed")
 
-    async def _sse_response():
-        try:
-            async for chunk in chain.astream_events(
-                {"user_prompt": request.message}, name=f"session_{session_id}_chat", event="stream", version="v1"
-            ):
-                event, name, run_id = chunk.get("event"), chunk.get("name"), chunk.get("run_id")
-                data = {"extras": {"name": name, "chat_id": run_id, "event": event, "session_id": session_id}}
-                if event == "on_chat_model_start":
-                    data.update({"delta": "", "status": "start"})
-                elif event == "on_chat_model_stream":
-                    data.update({"delta": chunk.get("data").get("chunk").content, "status": "generating"})
-                elif event == "on_chat_model_end":
-                    data.update({"delta": "", "status": "finished"})
-                else:
-                    continue
+    r.delete(f"session:{session_id}")
+    r.delete(f"uid:{_uid}:sessions")
 
-                data = dumps(data, ensure_ascii=False) + "\n"
-                logger.debug(f"SSE response: {data}")
+    sse_generator = _sse_response(chain, request.message, redis_lock, session_id)
+    return StreamingResponse(sse_generator, media_type="text/event-stream")
 
-                yield data
+
+@session_router.post("/{session_id}/retriever-qa", dependencies=[Depends(sk_auth)])
+async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple[int, int] = Depends(sk_auth)) -> StandardResponse | SSEResponse:
+    _uid, _ = info
+
+    redis_lock = f"chat_lock:uid:{_uid}"
+    if r.exists(redis_lock):
+        return StandardResponse(code=1, status="error", message="You are chatting, please wait a moment")
+    r.set(redis_lock, "lock", ex=30)
+
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        query = (
+            conn.query(SessionSchema.session_id, LLMSchema.llm_name)
+            .filter(SessionSchema.session_id == session_id)
+            .filter(SessionSchema.uid == _uid)
+            .join(LLMSchema, isouter=True)
+            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+        )
+
+        result = query.first()
+        if not result:
             r.delete(redis_lock)
+            return StandardResponse(code=1, status="error", message="Session not exist")
+
+        _, llm_name = result
+        if llm_name:
+            request.llm_name = llm_name
+            logger.debug(f"Use bind LLM: {llm_name}")
+        query = (
+            conn.query(LLMSchema)
+            .filter(LLMSchema.llm_name == request.llm_name)
+            .filter(or_(LLMSchema.delete_at.is_(None), datetime.datetime.now() < LLMSchema.delete_at))
+        )
+        _llm: LLMSchema | None = query.first()
+        if not _llm:
+            r.delete(redis_lock)
+            return StandardResponse(code=1, status="error", message="LLM not exist")
+
+        if not llm_name:
+            conn.query(SessionSchema).filter(SessionSchema.session_id == session_id).update({SessionSchema.llm_id: _llm.llm_id})
+            conn.commit()
+            logger.debug(f"Bind LLM: {request.llm_name} to Session: {session_id}")
+
+        query = (
+            conn.query(VectorDbSchema.embedding_id)
+            .filter(VectorDbSchema.vector_db_id == request.vector_db_id)
+            .filter(or_(VectorDbSchema.delete_at.is_(None), datetime.datetime.now() < VectorDbSchema.delete_at))
+        )
+        result = query.first()
+        if not result:
+            return StandardResponse(code=1, status="error", message="Vector DB not exist")
+
+        (embedding_id,) = result
+
+        query = (
+            conn.query(EmbeddingSchema)
+            .filter(EmbeddingSchema.embedding_id == embedding_id)
+            .filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.datetime.now() < EmbeddingSchema.delete_at))
+        )
+        _embedding: EmbeddingSchema | None = query.first()
+        if not _embedding:
+            return StandardResponse(code=1, status="error", message="Embedding not exist")
+
+        try:
+            llm: ChatOpenAI = init_llm(
+                llm_type=_llm.llm_type,
+                llm_name=_llm.llm_name,
+                base_url=_llm.base_url,
+                api_key=_llm.api_key,
+                temperature=request.temperature,
+                max_tokens=_llm.max_tokens,
+            )
+            if not llm:
+                return StandardResponse(code=1, status="error", message="LLM init failed")
+
+            prompt = init_retriever_prompt(
+                sys_prompt=_llm.sys_prompt,
+                request_type=_llm.request_type,
+                sys_name=_llm.sys_name,
+                user_name=_llm.user_name,
+                ai_name=_llm.ai_name,
+            )
+
+            embedding: OpenAIEmbeddings = init_embedding(
+                _embedding.embedding_type,
+                embedding_name=_embedding.embedding_name,
+                api_key=_embedding.api_key,
+                base_url=_embedding.base_url,
+                chunk_size=_embedding.chunk_size,
+            )
+
+            retriever: VectorStoreRetriever = init_retriever(
+                vector_db_id=request.vector_db_id,
+                embedding=embedding,
+            )
+
+            chain = init_retriever_qa_chain(llm=llm, prompt=prompt, retriever=retriever)
+
         except Exception as e:
-            logger.error(f"SSE failed: {e}")
-            yield dumps({"extras": {}, "delta": "", "status": f"exception: {e}"}) + "\n"
+            logger.error(f"Init langchain modules failed: {e}")
+            return StandardResponse(code=1, status="error", message="Chat init failed")
 
     r.delete(f"session:{session_id}")
     r.delete(f"uid:{_uid}:sessions")
 
-    return StreamingResponse(_sse_response(), media_type="text/event-stream")
+    sse_generator = _sse_response(chain, request.message, redis_lock, session_id)
+    return StreamingResponse(sse_generator, media_type="text/event-stream")
