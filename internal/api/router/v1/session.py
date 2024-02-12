@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from langchain.chains.base import Chain
 from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from sqlalchemy import or_
@@ -454,9 +455,11 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
 
     def _chat_after_save_history(chain: Chain, user_prompt: str, history: BaseChatMessageHistory):
         output = chain.invoke(user_prompt)
-        docs, llm_output = "\n\n".join(output["source_documents"]), output["result"]
-        history.add_user_message(f"Retriever Docs: {docs}\nUser Prompt: {user_prompt}")
-        history.add_ai_message(llm_output)
+        docs = "```\n" + "\n```\n---\n```\n".join(output["source_documents"]) + "\n```"
+        llm_output = output["result"]
+        history.add_message(SystemMessage(content=docs))
+        history.add_message(HumanMessage(content=user_prompt))
+        history.add_message(AIMessage(content=llm_output))
 
     Thread(target=_chat_after_save_history, args=(chain, request.message, history)).start()
     return StreamingResponse(token_generator, media_type="text/event-stream")
