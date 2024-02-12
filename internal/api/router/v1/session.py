@@ -1,10 +1,12 @@
 import datetime
 from json import dumps, loads
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from langchain.chains.base import Chain
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.messages.base import BaseMessage
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from sqlalchemy import or_
@@ -231,7 +233,7 @@ async def delete_session(session_id: int, uid: int = -1, info: Tuple[int, int] =
 
 
 @logger.catch
-async def _sse_response(chain: Chain, user_prompt: str, redis_lock: str, session_id: int):
+async def _sse_response(chain: Chain, user_prompt: str, redis_lock: str, session_id: int, history: BaseChatMessageHistory = None):
     async for chunk in chain.astream_events(
         {"user_prompt": user_prompt},
         version="v1",
@@ -241,8 +243,16 @@ async def _sse_response(chain: Chain, user_prompt: str, redis_lock: str, session
         if event == "on_chat_model_start":
             data.update({"delta": "", "status": "start"})
         elif event == "on_chat_model_stream":
-            data.update({"delta": chunk.get("data").get("chunk").content, "status": "generating"})
+            delta = chunk["data"]["chunk"].content
+            data.update({"delta": delta, "status": "generating"})
         elif event == "on_chat_model_end":
+            if history:
+                input_messages: List[BaseMessage] = chunk["data"]["input"]["messages"][0]
+                output_message: BaseMessage = chunk["data"]["output"]["generations"][0][0]["message"]
+                for message in input_messages + [output_message]:
+                    history.add_message(message)
+            logger.debug(f"Chat finished: {chunk}")
+
             data.update({"delta": "", "status": "finished"})
         else:
             continue
@@ -425,6 +435,8 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
             if not llm:
                 return StandardResponse(code=1, status="error", message="LLM init failed")
 
+            history = init_history(session_id=session_id)
+
             prompt = init_retriever_prompt(
                 sys_prompt=_llm.sys_prompt,
                 request_type=_llm.request_type,
@@ -441,6 +453,9 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
                 chunk_size=_embedding.chunk_size,
             )
 
+            if not embedding:
+                return StandardResponse(code=1, status="error", message="Embedding init failed")
+
             retriever: VectorStoreRetriever = init_retriever(
                 vector_db_id=request.vector_db_id,
                 embedding=embedding,
@@ -455,5 +470,5 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
     r.delete(f"session:{session_id}")
     r.delete(f"uid:{_uid}:sessions")
 
-    sse_generator = _sse_response(chain, request.message, redis_lock, session_id)
+    sse_generator = _sse_response(chain, request.message, redis_lock, session_id, history)
     return StreamingResponse(sse_generator, media_type="text/event-stream")
