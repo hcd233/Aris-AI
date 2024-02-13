@@ -378,7 +378,7 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
             logger.debug(f"Bind LLM: {request.llm_name} to Session: {session_id}")
 
         query = (
-            conn.query(VectorDbSchema.embedding_id)
+            conn.query(VectorDbSchema.embedding_id, VectorDbSchema.db_size)
             .filter(VectorDbSchema.vector_db_id == request.vector_db_id)
             .filter(or_(VectorDbSchema.delete_at.is_(None), datetime.datetime.now() < VectorDbSchema.delete_at))
         )
@@ -386,7 +386,10 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
         if not result:
             return StandardResponse(code=1, status="error", message="Vector DB not exist")
 
-        (embedding_id,) = result
+        (embedding_id, db_size) = result
+
+        if db_size == 0:
+            return StandardResponse(code=1, status="error", message="Vector DB is empty, please upload data first")
 
         query = (
             conn.query(EmbeddingSchema)
