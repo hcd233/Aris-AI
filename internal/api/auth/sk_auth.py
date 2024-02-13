@@ -1,6 +1,8 @@
+from datetime import datetime
 from typing import Optional, Tuple
 
 from fastapi import Depends, HTTPException, status
+from sqlalchemy import or_
 
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import ApiKeySchema, UserSchema
@@ -12,7 +14,11 @@ async def sk_auth(
     bearer_auth: Optional[str] = Depends(bearer_scheme),
 ) -> Tuple[int, int]:
     with session() as conn:
-        query = conn.query(ApiKeySchema.uid).filter(ApiKeySchema.api_key_secret == bearer_auth.credentials)
+        query = (
+            conn.query(ApiKeySchema.uid)
+            .filter(ApiKeySchema.api_key_secret == bearer_auth.credentials)
+            .filter(or_(ApiKeySchema.delete_at.is_(None), datetime.now() < ApiKeySchema.delete_at))
+        )
         result = query.first()
     if not result:
         raise HTTPException(
