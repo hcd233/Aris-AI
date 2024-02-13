@@ -230,6 +230,9 @@ def upload_vector_db(
         return StandardResponse(code=1, status="error", message="No file is uploaded")
 
     documents = load_upload_files(paths)
+    if not documents:
+        return StandardResponse(code=1, status="error", message="No document is loaded")
+
     documents = split_documents(documents, chunk_size, chunk_overlap)
 
     def _embedding_task():
