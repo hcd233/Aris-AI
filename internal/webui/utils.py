@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 import requests
 import streamlit as st
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 from internal.config import API_HOST, API_PORT
 
@@ -21,7 +22,7 @@ def parse_response(response: requests.Response, action: str) -> Dict[str, Any]:
 
     if resp.get("status") != "success":
         st.error(f"{action} Status Error {resp.get('message')}")
-        st.stop
+        st.stop()
 
     data = resp.get("data")
     return data
@@ -43,7 +44,23 @@ def get_llms(api_key: str) -> List[str]:
     return llms
 
 
-def get_vector_db(api_key: str) -> Dict[str, int]:
+def get_embeddings(api_key: str) -> Dict[str, int]:
+    url = urljoin(API_URL, "v1/model/embedding/embeddings")
+    headers = {"Authorization": f"Bearer {api_key}"}
+    response = requests.get(
+        url=url,
+        headers=headers,
+    )
+
+    data = parse_response(response, "get embeddings")
+
+    embeddings = data.get("embedding_list")
+    embeddings = {embedding.get("embedding_name"): embedding.get("embedding_id") for embedding in embeddings}
+
+    return embeddings
+
+
+def get_vector_dbs(api_key: str) -> Dict[str, int]:
     url = urljoin(API_URL, "v1/vector-db/vector-dbs")
     headers = {"Authorization": f"Bearer {api_key}"}
     response = requests.get(
@@ -97,6 +114,38 @@ def get_history(api_key: str, session_id: int) -> Tuple[int, List[Dict[Literal["
     return bind_llm, messages
 
 
+def get_vector_db_info(api_key: str, vector_db_id: int) -> Dict[str, Any]:
+    url = urljoin(API_URL, f"v1/vector-db/{vector_db_id}")
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    response = requests.get(
+        url=url,
+        headers=headers,
+    )
+
+    data = parse_response(response, f"get vector db {vector_db_id}'s info")
+
+    for k, v in data.items():
+        if isinstance(v, str):
+            continue
+        data[k] = str(v)
+    return data
+
+
+def get_embedding_info(api_key: str, embedding_id: int) -> Dict[str, Any]:
+    url = urljoin(API_URL, f"v1/model/embedding/{embedding_id}")
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    response = requests.get(
+        url=url,
+        headers=headers,
+    )
+
+    data = parse_response(response, f"get embedding {embedding_id}'s info")
+
+    return data
+
+
 def new_session(api_key: str) -> int:
     url = urljoin(API_URL, "v1/session")
     headers = {"Authorization": f"Bearer {api_key}"}
@@ -109,6 +158,44 @@ def new_session(api_key: str) -> int:
     data = parse_response(response, "create chat session")
 
     return data.get("session_id")
+
+
+def new_vector_db(api_key: str, vector_db_name: str, embedding_name: str, vector_db_description: str) -> int:
+    url = urljoin(API_URL, "v1/vector-db")
+    headers = {"Authorization": f"Bearer {api_key}"}
+    data = {
+        "vector_db_name": vector_db_name,
+        "embedding_name": embedding_name,
+        "vector_db_description": vector_db_description,
+    }
+
+    response = requests.post(
+        url=url,
+        headers=headers,
+        json=data,
+    )
+
+    data = parse_response(response, "create vector db")
+
+    return data.get("vector_db_id")
+
+
+def upload_files(api_key: str, vector_db_id: int, files: List[UploadedFile], chunk_size: int, chunk_overlap: int) -> None:
+    url = urljoin(API_URL, f"v1/vector-db/{vector_db_id}/upload")
+    headers = {"Authorization": f"Bearer {api_key}"}
+    params = {
+        "chunk_size": chunk_size,
+        "chunk_overlap": chunk_overlap,
+    }
+
+    response = requests.put(
+        url=url,
+        headers=headers,
+        params=params,
+        files=[("files", (file.name, file.getvalue(), file.type)) for file in files],
+    )
+
+    parse_response(response, "upload files")
 
 
 def chat(api_key: str, session_id: int, message: str, llm_name: str, temperature: float) -> Iterator[str]:
