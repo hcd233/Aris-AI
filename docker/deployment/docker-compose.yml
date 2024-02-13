@@ -50,13 +50,16 @@ services:
       "--browser.gatherUsageStats", "false",
       "--server.maxUploadSize", "100",
     ]
+    depends_on:
+      alice-ai-api:
+        condition: service_healthy    
 
   alice-ai-mysql:
     image: mysql:latest
     container_name: alice-ai-mysql
     privileged: true
     volumes:
-      - mysql-data:/var/lib/alice-mysql
+      - mysql-data:/var/lib/mysql
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h alice-ai-mysql -P 3306 -u$$MYSQL_USER -p$$MYSQL_PASSWORD" ]
       interval: 5s
