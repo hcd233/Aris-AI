@@ -3,13 +3,14 @@ from hashlib import sha256
 from pathlib import Path
 from typing import List, Tuple
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
 from langchain_community.vectorstores.faiss import FAISS
 from sqlalchemy import or_
 
 from internal.config import FAISS_ROOT
 from internal.langchain.embedding import init_embedding
 from internal.langchain.text_splitter import load_upload_files, split_documents
+from internal.logger import logger
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import EmbeddingSchema, VectorDbSchema
 
@@ -154,6 +155,7 @@ def upload_vector_db(
     files: List[UploadFile],
     chunk_size: int,
     chunk_overlap: int,
+    background_tasks: BackgroundTasks,
     info: Tuple[str, str] = Depends(sk_auth),
 ):
     uid, _ = info
@@ -230,11 +232,20 @@ def upload_vector_db(
     documents = load_upload_files(paths)
     documents = split_documents(documents, chunk_size, chunk_overlap)
 
-    db = FAISS.from_documents(documents, embedding)
-    if (faiss_dir / "index.faiss").exists():
-        _db = FAISS.load_local(str(faiss_dir), embedding)
-        db.merge_from(_db)
-    db.save_local(str(faiss_dir))
+    def _embedding_task():
+        logger.debug(f"Start async task: embedding {len(documents)} docs for vector_db_id: {vector_db_id}")
+        try:
+            db = FAISS.from_documents(documents, embedding)
+            if (faiss_dir / "index.faiss").exists():
+                _db = FAISS.load_local(str(faiss_dir), embedding)
+                db.merge_from(_db)
+            db.save_local(str(faiss_dir))
+        except Exception as e:
+            logger.error(f"Error when embedding {len(documents)} docs for vector_db_id: {vector_db_id}, error: {e}")
+        else:
+            logger.debug(f"Finish async task: embedding {len(documents)} docs for vector_db_id: {vector_db_id}")
+
+    background_tasks.add_task(_embedding_task)
 
     with session() as conn:
         if not conn.is_active:
