@@ -52,7 +52,8 @@ def init_webui():
         "api_key": "",
         "llm": "",
         "temperature": 0.7,
-        "session_id": None,
+        "session_id": 0,
+        "session_list": [],
         "history": [],
         "bind_llm": None,
         "vector_db_id": 0,
@@ -71,13 +72,16 @@ def sidebar():
         st.page_link("pages/chat.py", label="Chat", icon="💬")
         st.page_link("pages/vector_db.py", label="Knowledge Base", icon="📚")
 
-    sessions = get_sessions(cache.api_key)
+    if not cache.session_list:
+        cache.session_list = get_sessions(cache.api_key)
     st.sidebar.header("Sessions")
-    cache.session_id = st.sidebar.selectbox("Select session", options=sessions)
+    cache.session_id = st.sidebar.selectbox("Select session", options=cache.session_list)
+
     new_session_onclick = st.sidebar.button("New Chat", key="new_chat")
     if new_session_onclick:
         cache.session_id = new_session(cache.api_key)
         st.success(f"New session created: {cache.session_id}")
+        cache.session_list = []
         st.rerun()
 
     if cache.session_id:
