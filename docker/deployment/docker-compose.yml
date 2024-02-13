@@ -45,6 +45,10 @@ services:
     entrypoint: [
       "streamlit", "run", 
       "alice_webui.py",
+      "--client.showSidebarNavigation", "false",
+      "--runner.magicEnabled", "false",
+      "--browser.gatherUsageStats", "false",
+      "--server.maxUploadSize", "100",
     ]
 
   alice-ai-mysql:
