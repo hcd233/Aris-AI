@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from json import dumps, loads
 from threading import Thread
 from typing import Any, Callable, Dict, Tuple
@@ -53,7 +53,7 @@ async def create_session(info: Tuple[int, int] = Depends(sk_auth)):
             query = (
                 conn.query(SessionSchema.session_id)
                 .filter(SessionSchema.uid == uid)
-                .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+                .filter(or_(SessionSchema.delete_at.is_(None), datetime.now() < SessionSchema.delete_at))
             )
             results = query.all()
             for result in results:
@@ -103,7 +103,7 @@ async def list_session(page_id: int = 0, per_page_num: int = 20, info: Tuple[int
         query = (
             conn.query(SessionSchema.session_id, SessionSchema.create_at, SessionSchema.update_at)
             .filter(SessionSchema.uid == uid)
-            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            .filter(or_(SessionSchema.delete_at.is_(None), datetime.now() < SessionSchema.delete_at))
             .order_by(SessionSchema.session_id.desc())
             .offset(page_id * per_page_num)
         )
@@ -148,7 +148,7 @@ async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth))
             .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == uid)
             .join(LLMSchema, isouter=True)
-            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            .filter(or_(SessionSchema.delete_at.is_(None), datetime.now() < SessionSchema.delete_at))
         )
         result = query.first()
 
@@ -207,7 +207,7 @@ async def delete_session(session_id: int, uid: int = -1, info: Tuple[int, int] =
                 conn.query(SessionSchema.session_id, SessionSchema.delete_at)
                 .filter(SessionSchema.session_id == session_id)
                 .filter(SessionSchema.uid == uid)
-                .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+                .filter(or_(SessionSchema.delete_at.is_(None), datetime.now() < SessionSchema.delete_at))
             )
 
             if not query.first():
@@ -223,9 +223,9 @@ async def delete_session(session_id: int, uid: int = -1, info: Tuple[int, int] =
             conn.query(SessionSchema)
             .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == uid)
-            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            .filter(or_(SessionSchema.delete_at.is_(None), datetime.now() < SessionSchema.delete_at))
         )
-        query.update({SessionSchema.delete_at: datetime.datetime.now()})
+        query.update({SessionSchema.delete_at: datetime.now()})
         conn.commit()
 
     r.delete(f"session:{session_id}")
@@ -255,7 +255,7 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
             .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == _uid)
             .join(LLMSchema, isouter=True)
-            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            .filter(or_(SessionSchema.delete_at.is_(None), datetime.now() < SessionSchema.delete_at))
         )
 
         result = query.first()
@@ -270,7 +270,7 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
         query = (
             conn.query(LLMSchema)
             .filter(LLMSchema.llm_name == request.llm_name)
-            .filter(or_(LLMSchema.delete_at.is_(None), datetime.datetime.now() < LLMSchema.delete_at))
+            .filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
         )
         _llm: LLMSchema | None = query.first()
         if not _llm:
@@ -350,7 +350,7 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
             .filter(SessionSchema.session_id == session_id)
             .filter(SessionSchema.uid == _uid)
             .join(LLMSchema, isouter=True)
-            .filter(or_(SessionSchema.delete_at.is_(None), datetime.datetime.now() < SessionSchema.delete_at))
+            .filter(or_(SessionSchema.delete_at.is_(None), datetime.now() < SessionSchema.delete_at))
         )
 
         result = query.first()
@@ -365,7 +365,7 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
         query = (
             conn.query(LLMSchema)
             .filter(LLMSchema.llm_name == request.llm_name)
-            .filter(or_(LLMSchema.delete_at.is_(None), datetime.datetime.now() < LLMSchema.delete_at))
+            .filter(or_(LLMSchema.delete_at.is_(None), datetime.now() < LLMSchema.delete_at))
         )
         _llm: LLMSchema | None = query.first()
         if not _llm:
@@ -380,7 +380,7 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
         query = (
             conn.query(VectorDbSchema.embedding_id, VectorDbSchema.db_size)
             .filter(VectorDbSchema.vector_db_id == request.vector_db_id)
-            .filter(or_(VectorDbSchema.delete_at.is_(None), datetime.datetime.now() < VectorDbSchema.delete_at))
+            .filter(or_(VectorDbSchema.delete_at.is_(None), datetime.now() < VectorDbSchema.delete_at))
         )
         result = query.first()
         if not result:
@@ -394,7 +394,7 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
         query = (
             conn.query(EmbeddingSchema)
             .filter(EmbeddingSchema.embedding_id == embedding_id)
-            .filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.datetime.now() < EmbeddingSchema.delete_at))
+            .filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.now() < EmbeddingSchema.delete_at))
         )
         _embedding: EmbeddingSchema | None = query.first()
         if not _embedding:
