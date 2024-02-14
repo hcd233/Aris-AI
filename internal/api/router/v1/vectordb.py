@@ -1,7 +1,9 @@
+import re
 from datetime import datetime
 from hashlib import sha256
+from json import dumps, loads
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Literal, Tuple
 
 from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
 from langchain_community.vectorstores.faiss import FAISS
@@ -9,7 +11,7 @@ from sqlalchemy import or_
 
 from internal.config import FAISS_ROOT
 from internal.langchain.embedding import init_embedding
-from internal.langchain.text_splitter import load_upload_files, split_documents
+from internal.langchain.text_splitter import load_upload_files, load_upload_urls, split_documents
 from internal.logger import logger
 from internal.middleware.mysql import session
 from internal.middleware.mysql.model import EmbeddingSchema, VectorDbSchema
@@ -149,8 +151,8 @@ def get_vector_db(vector_db_id: int, info: Tuple[str, str] = Depends(sk_auth)):
     return StandardResponse(code=0, status="success", data=data)
 
 
-@vector_db_router.put("/{vector_db_id}/upload", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-def upload_vector_db(
+@vector_db_router.put("/{vector_db_id}/files", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+def upload_files_to_vector_db(
     vector_db_id: int,
     files: List[UploadFile],
     chunk_size: int,
@@ -212,12 +214,20 @@ def upload_vector_db(
     file_dir.mkdir(parents=True, exist_ok=True)
     faiss_dir.mkdir(parents=True, exist_ok=True)
 
+    existed = []
+    invalid = []
+
     paths = []
     for file in files:
         path = file_dir.joinpath(file.filename)
+        if path.suffix not in (".pdf", ".txt", ".md", ".html", ".htm"):
+            invalid.append(file.filename)
+            continue
+
         content = file.file.read()
         if path.exists():
             if sha256(content).hexdigest() == sha256(path.read_bytes()).hexdigest():
+                existed.append(file.filename)
                 continue  # skip the same file
 
             path = file_dir.joinpath(f"{file.filename}_{datetime.now().strftime('%Y%m%d%H%M%S')}")
@@ -269,6 +279,150 @@ def upload_vector_db(
     data = {
         "embedding_name": embedding_name,
         "upload_size": len(documents),
+        "existed_files": existed,
+        "invalid_files": invalid,
+    }
+
+    return StandardResponse(code=0, status="success", data=data)
+
+
+@vector_db_router.put("/{vector_db_id}/urls", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+def upload_urls_to_vector_db(
+    vector_db_id: int,
+    urls: List[str],
+    chunk_size: int,
+    chunk_overlap: int,
+    url_type: Literal["arxiv", "single", "recursive"],
+    background_tasks: BackgroundTasks,
+    info: Tuple[str, str] = Depends(sk_auth),
+):
+    uid, _ = info
+
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        query = (
+            conn.query(VectorDbSchema.embedding_id)
+            .filter(VectorDbSchema.vector_db_id == vector_db_id)
+            .filter(VectorDbSchema.uid == uid)
+            .filter(or_(VectorDbSchema.delete_at.is_(None), datetime.now() < VectorDbSchema.delete_at))
+        )
+        result = query.first()
+    if not result:
+        return StandardResponse(code=1, status="error", message=f"Vector DB id `{vector_db_id}` does not exist")
+
+    (embedding_id,) = result
+
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        query = (
+            conn.query(
+                EmbeddingSchema.embedding_type,
+                EmbeddingSchema.embedding_name,
+                EmbeddingSchema.base_url,
+                EmbeddingSchema.api_key,
+                EmbeddingSchema.chunk_size,
+            )
+            .filter(EmbeddingSchema.embedding_id == embedding_id)
+            .filter(or_(EmbeddingSchema.delete_at.is_(None), datetime.now() < EmbeddingSchema.delete_at))
+        )
+        result = query.first()
+
+    if not result:
+        return StandardResponse(code=1, status="error", message=f"Bind embedding id `{embedding_id}` does not exist")
+
+    embedding_type, embedding_name, base_url, api_key, _chunk_size = result
+    embedding = init_embedding(embedding_type, embedding_name, api_key, base_url, _chunk_size)
+
+    chunk_size = min(chunk_size, _chunk_size)
+
+    dir = Path(FAISS_ROOT).joinpath(str(vector_db_id))
+    file_dir, faiss_dir = dir / "files", dir / "vector_db"
+    file_dir.mkdir(parents=True, exist_ok=True)
+    faiss_dir.mkdir(parents=True, exist_ok=True)
+
+    existed = []
+    invalid = []
+
+    _urls = []
+    for url in urls:
+        try:
+            if url_type == "arxiv":
+                _match = re.match(r"(https://|http://|)arxiv.org/abs/(\d+\.\d+)", url)
+                if not _match:
+                    raise ValueError(f"Invalid arxiv url: {url}")
+                url = _match.group(2)
+
+            _urls.append(url)
+        except Exception as e:
+            logger.error(f"Processing {url} occurs error: {e}")
+            invalid.append(url)
+
+    urls = _urls
+    if (file_dir / "urls.jsonl").exists():
+        with (file_dir / "urls.jsonl").open("r") as fp:
+            uploaded_urls = set([loads(line)["urls"] for line in fp.readlines() if line.strip()])
+        urls = set(urls)
+        existed = list(urls & uploaded_urls)
+        urls = list(urls - set(existed))
+
+    documents = load_upload_urls(urls, url_type)
+    if not documents:
+        return StandardResponse(code=1, status="error", message="No document is loaded")
+
+    documents = split_documents(documents, chunk_size, chunk_overlap)
+
+    def _embedding_task():
+        logger.debug(f"Start async task: embedding {len(documents)} docs for vector_db_id: {vector_db_id}")
+        try:
+            db = FAISS.from_documents(documents, embedding)
+            if (faiss_dir / "index.faiss").exists():
+                _db = FAISS.load_local(str(faiss_dir), embedding)
+                db.merge_from(_db)
+            db.save_local(str(faiss_dir))
+        except Exception as e:
+            logger.error(f"Error when embedding {len(documents)} docs for vector_db_id: {vector_db_id}, error: {e}")
+        else:
+            logger.debug(f"Finish async task: embedding {len(documents)} docs for vector_db_id: {vector_db_id}")
+
+    background_tasks.add_task(_embedding_task)
+
+    with (file_dir / "urls.jsonl").open("a") as fp:
+        upload_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for url in urls:
+            data = {"urls": url, "url_type": url_type, "upload_at": upload_at}
+            fp.write(f"{dumps(data, ensure_ascii=False)}\n")
+
+    with session() as conn:
+        if not conn.is_active:
+            conn.rollback()
+            conn.close()
+        else:
+            conn.commit()
+
+        query = (
+            conn.query(VectorDbSchema)
+            .filter(VectorDbSchema.vector_db_id == vector_db_id)
+            .filter(VectorDbSchema.uid == uid)
+            .filter(or_(VectorDbSchema.delete_at.is_(None), datetime.now() < VectorDbSchema.delete_at))
+        )
+        query.update({VectorDbSchema.db_size: VectorDbSchema.db_size + len(documents)})
+        conn.commit()
+
+    data = {
+        "embedding_name": embedding_name,
+        "upload_size": len(documents),
+        "existed_files": existed,
+        "invalid_files": invalid,
     }
 
     return StandardResponse(code=0, status="success", data=data)
