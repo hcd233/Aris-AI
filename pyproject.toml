@@ -22,6 +22,9 @@ python-multipart = "^0.0.9"
 pdfminer-six = "^20231228"
 unstructured = {version = "^0.12.4", python = ">=3.11,<3.12"}
 markdown = "^3.5.2"
+arxiv = "^2.1.0"
+pymupdf = "^1.23.22"
+selenium = "^4.17.2"
 
 
 [build-system]
