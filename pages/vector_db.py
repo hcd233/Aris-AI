@@ -7,30 +7,29 @@ from streamlit import session_state as cache
 from internal.webui.utils import get_embedding_info, get_embeddings, get_vector_db_info, get_vector_dbs, new_vector_db, upload_files, upload_urls
 
 ABOUT = """\
-### Alice AI是由lvlvko研发的大语言模型，提供api和webui服务
-#### 技术栈
-##### 模型微调:
+### Alice AI is a project of providing private llm api and webui service
+#### Author: [hcd233](https://github.com/hcd233)
+#### Tech Stack
+##### LLM fine-tuning:
 - Transformers
 - PEFT
 - Pytorch
 - Deepspeed
-##### 模型部署:
-- VLLM
+##### LLM deployment:
 - llama.cpp
-##### 模型服务:
+- llama-cpp-python
+##### LLM service:
 - Langchain
-- Milvus
-##### 后台API：
+- FAISS
+##### API backend:
 - Fastapi
 - Sqlalchemy
 - Mysql
 - Redis
 ##### WebUI:
 - Streamlit
-##### 项目部署:
+##### Project deployment:
 - Docker
-- Kubernetes
-- Traefik
 """
 
 
@@ -42,8 +41,8 @@ def init_webui():
         layout="wide",  # "centered",
         initial_sidebar_state="expanded",
         menu_items={
-            "Get Help": "https://github.com/hcd233",
-            "Report a bug": "https://github.com/hcd233",
+            "Get Help": "https://github.com/hcd233/Alice-AI/README.md",
+            "Report a bug": "https://github.com/hcd233/Alice-AI/issues/new",
             "About": ABOUT,
         },
     )
