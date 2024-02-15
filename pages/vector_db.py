@@ -4,7 +4,7 @@ from typing import Any, Dict
 import streamlit as st
 from streamlit import session_state as cache
 
-from internal.webui.utils import get_embedding_info, get_embeddings, get_vector_db_info, get_vector_dbs, new_vector_db, upload_files
+from internal.webui.utils import get_embedding_info, get_embeddings, get_vector_db_info, get_vector_dbs, new_vector_db, upload_files, upload_urls
 
 ABOUT = """\
 ### Alice AI是由lvlvko研发的大语言模型，提供api和webui服务
@@ -106,27 +106,73 @@ def body():
             st.rerun()
         return
 
-    st.subheader("Upload data to knowledge base")
-    with st.form("upload_files"):
-        files = st.file_uploader("Upload data", type=["txt", "md", "pdf", "html"], accept_multiple_files=True)
-        embedding_id = cache.embedding_name_id_map.get(cache.embedding_name)
-        info = get_embedding_info(cache.api_key, embedding_id)
+    upload_header, upload_type = st.columns(2)
+    upload_header.subheader("Upload data to knowledge base")
+    upload_type = upload_type.selectbox("Upload Type", options=["file", "url"])
+    if upload_type == "file":
+        with st.form("upload_files"):
+            files = st.file_uploader("Upload files", type=["txt", "md", "pdf", "html"], accept_multiple_files=True)
+            embedding_id = cache.embedding_name_id_map.get(cache.embedding_name)
+            info = get_embedding_info(cache.api_key, embedding_id)
 
-        chunk_size, chunk_overlap = st.columns(2)
-        chunk_size = chunk_size.number_input("Chunk Size", min_value=64, max_value=info.get("chunk_size") * 2, step=64)
-        chunk_overlap = chunk_overlap.number_input("Chunk Overlap", min_value=0, max_value=info.get("chunk_size"), step=16)
+            chunk_size, chunk_overlap = st.columns(2)
+            chunk_size = chunk_size.number_input("Chunk Size", min_value=64, max_value=info.get("chunk_size") * 2, step=64)
+            chunk_overlap = chunk_overlap.number_input("Chunk Overlap", min_value=0, max_value=info.get("chunk_size"), step=16)
 
-        submit_onclick = st.form_submit_button("Submit")
+            upload_func = upload_files
+            upload_args = dict(
+                api_key=cache.api_key,
+                vector_db_id=cache.vector_db_id,
+                files=files,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+            )
+
+            submit_onclick = st.form_submit_button("Submit")
+
+    elif upload_type == "url":
+        with st.form("upload_urls"):
+            urls = st.text_area("Urls", max_chars=1000, help="One url per line")
+            embedding_id = cache.embedding_name_id_map.get(cache.embedding_name)
+            info = get_embedding_info(cache.api_key, embedding_id)
+
+            chunk_size, chunk_overlap, url_type = st.columns(3)
+            chunk_size = chunk_size.number_input("Chunk Size", min_value=64, max_value=info.get("chunk_size") * 2, step=64)
+            chunk_overlap = chunk_overlap.number_input("Chunk Overlap", min_value=0, max_value=info.get("chunk_size"), step=16)
+            url_type = url_type.selectbox("Url Type", options=["arxiv", "single", "recursive"])
+
+            upload_func = upload_urls
+            upload_args = dict(
+                api_key=cache.api_key,
+                vector_db_id=cache.vector_db_id,
+                urls=urls,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                url_type=url_type,
+            )
+
+            submit_onclick = st.form_submit_button("Submit")
+
+    else:
+        st.error("Invalid upload type")
+        return
 
     if submit_onclick:
         if chunk_size // 2 < chunk_overlap:
             st.error("Chunk Overlap should be less than half of Chunk Size")
             return
-        if not files:
-            st.error("No files uploaded")
+
+        if upload_type == "file" and not files:
+            st.error(f"No {upload_type} uploaded")
             return
-        upload_files(cache.api_key, cache.vector_db_id, files, chunk_size, chunk_overlap)
-        st.success("Upload files success")
+
+        if upload_type == "url" and not urls:
+            st.error(f"No {upload_type} input")
+            return
+
+        data = upload_func(**upload_args)
+        st.success(f"Upload {upload_type} success\n\nInfo: {data}")
+        time.sleep(1)
 
 
 def main():

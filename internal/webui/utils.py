@@ -180,8 +180,8 @@ def new_vector_db(api_key: str, vector_db_name: str, embedding_name: str, vector
     return data.get("vector_db_id")
 
 
-def upload_files(api_key: str, vector_db_id: int, files: List[UploadedFile], chunk_size: int, chunk_overlap: int) -> None:
-    url = urljoin(API_URL, f"v1/vector-db/{vector_db_id}/upload")
+def upload_files(api_key: str, vector_db_id: int, files: List[UploadedFile], chunk_size: int, chunk_overlap: int) -> Dict[str, Any]:
+    url = urljoin(API_URL, f"v1/vector-db/{vector_db_id}/files")
     headers = {"Authorization": f"Bearer {api_key}"}
     params = {
         "chunk_size": chunk_size,
@@ -195,7 +195,28 @@ def upload_files(api_key: str, vector_db_id: int, files: List[UploadedFile], chu
         files=[("files", (file.name, file.getvalue(), file.type)) for file in files],
     )
 
-    parse_response(response, "upload files")
+    data = parse_response(response, "upload files")
+    return data
+
+
+def upload_urls(api_key: str, vector_db_id: int, urls: str, chunk_size: int, chunk_overlap: int, url_type: str) -> Dict[str, Any]:
+    url = urljoin(API_URL, f"v1/vector-db/{vector_db_id}/urls")
+    headers = {"Authorization": f"Bearer {api_key}"}
+    params = {
+        "chunk_size": chunk_size,
+        "chunk_overlap": chunk_overlap,
+        "url_type": url_type,
+    }
+
+    response = requests.put(
+        url=url,
+        headers=headers,
+        params=params,
+        json=urls.split("\n"),
+    )
+
+    data = parse_response(response, "upload urls")
+    return data
 
 
 def chat(api_key: str, session_id: int, message: str, llm_name: str, temperature: float) -> Iterator[str]:
