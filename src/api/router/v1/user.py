@@ -62,28 +62,3 @@ def login_user(request: UserRequest) -> StandardResponse:
     data = {"uid": uid, "token": encode_token(uid=uid, level=is_admin)}
 
     return StandardResponse(code=0, status="success", data=data)
-
-
-@user_router.get("/{uid}/keys", response_model=StandardResponse, dependencies=[Depends(jwt_auth)])
-def get_api_key_list(uid: int, info: Tuple[int, int] = Depends(jwt_auth)) -> StandardResponse:
-    _uid, level = info
-    if not (level or _uid == uid):
-        return StandardResponse(code=1, status="error", message="No permission")
-    with session() as conn:
-        if not conn.is_active:
-            conn.rollback()
-            conn.close()
-        else:
-            conn.commit()
-
-        query = (
-            conn.query(ApiKeySchema.ak_id, ApiKeySchema.api_key_secret, ApiKeySchema.create_at, ApiKeySchema.delete_at)
-            .filter(or_(ApiKeySchema.uid == uid, level == 1))
-            .filter(or_(ApiKeySchema.delete_at.is_(None), ApiKeySchema.delete_at > datetime.datetime.now()))
-        )
-        result = query.all()
-
-    fields = ("api_key_id", "api_key_secret", "create_at", "expire_at")
-    data = {"uid": uid, "api_key_list": [dict(zip(fields, row)) for row in result]}
-
-    return StandardResponse(code=0, status="success", data=data)
