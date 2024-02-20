@@ -4,7 +4,9 @@
 
 这是一个提供**私有化大语言模型服务**的项目，目的是为了快速接入通用大模型(GPT3.5、GPT4)和私有模型(Qwen1.5、ChatGLM3、LLama2、Baichuan2等)服务，提供统一的API接口。依托langchain框架提供多轮对话（Chat）和检索增强生成（RAG）服务，项目名来源于Blue Archive中的角色Alice，如下图
 
-<>
+<div style="text-align: center;">
+  <img src="assets/110531412.jpg" style="width: 50%;" />
+</div>
 
 ## 技术栈
 
