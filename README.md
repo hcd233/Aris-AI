@@ -1,33 +1,35 @@
 # Alice-AI
 
-## 介绍
+[ English | [简体中文](README_zh.md) ]
 
-这是一个提供**私有化大语言模型服务**的项目，目的是为了快速接入通用大模型(GPT3.5、GPT4)和私有模型(Qwen1.5、ChatGLM3、LLama2、Baichuan2等)服务，提供统一的API接口。依托langchain框架提供多轮对话（Chat）和检索增强生成（RAG）服务，项目名来源于Blue Archive中的角色Alice，如下图
+## Introduction
+
+This is a project that provides **private large language model services**, aiming to quickly access general large models (GPT3.5, GPT4) and private models (Qwen1.5, ChatGLM3, LLama2, Baichuan2, etc.) services, providing a unified API interface. Relying on the langchain framework to provide multi-turn dialogue (Chat) and retrieval augmented generation (RAG) services, the project name comes from the character Alice in Blue Archive, as shown in the figure below
 
 <div style="text-align: center;">
   <img src="assets/110531412.jpg" style="width: 50%;" />
 </div>
 
-## 技术栈
+## Tech Stack
 
-### 微调
+### Fine-tuning
 
 - Transformers
 - PEFT
 - Pytorch
 - Deepspeed
 
-### 私有模型部署
+### Private Model Deployment
 
 - llama.cpp
 - llama-cpp-python
 
-### 大模型服务
+### Large Language Model Service
 
 - Langchain
 - FAISS
 
-### API后端
+### API Backend
 
 - Fastapi
 - Sqlalchemy
@@ -35,179 +37,179 @@
 - Mysql
 - Redis
 
-### Web界面
+### Web UI
 
 - Streamlit
 
-### 项目部署
+### Project Deployment
 
 - Docker
 
-## 功能实现
+## Function Implementation
 
-### API相关
+### API Related
 
-1. 用户注册、登录、权限管理
-2. 对话管理、历史记录管理
-3. 模型(LLM、Embedding)管理、预设(System)提示词管理
-4. 向量数据库管理、向量数据库插入、支持文件: Pdf、Markdown、HTML和TXT格式的文件和Arxiv文章链接、链接递归插入
+1. User registration, login, permission management
+2. Dialogue management, history management
+3. Model (LLM, Embedding) management, preset (System) prompt management
+4. Vector database management, vector database insertion, supported files: Pdf, Markdown, HTML and TXT format files and Arxiv article links, link recursive insertion
 
-### 模型服务相关
+### Model Service Related
 
-1. Chat: 支持多轮对话
-2. Retriever QA: 支持(RAG)检索增强生成的问答
+1. Chat: Supports multi-round dialogue
+2. Retriever QA: Supports question answering with (RAG) retrieval enhanced generation
 
-### Web界面
+### Web Interface
 
-1. 提供上传知识库的界面
-2. 提供对话界面
+1. Provide an interface to upload knowledge bases
+2. Provide a dialogue interface
 
-## 项目结构
+## Project Structure
 
 ```text
-├─ alice_api.py: 启动API服务器
-├─ alice_webui.py: 启动WebUI
-├─ confs: 配置文件
-│   ├─ deployment: 用于正式环境
-│   └─ local: 用于本地环境
-├─ envs: 环境变量
-│   ├─ deployment: 用于正式环境
-│   └─ local: 用于本地环境
-├─ docker: 容器部署文件
-│   ├─ deployment: 用于正式环境部署
-│   └─ local: 用于本地环境调试（只启动Mysql和Redis）
-├─ pages: streamlit页面
-│   ├─ chat.py: 对话界面
-│   └─ vector_db.py: 向量数据库操作界面
-├─ src: 内部模块
-│   ├─ deployment: 用于正式环境
-│   └─ local: 用于本地环境
-│   ├─ config: 读取环境变量和配置文件
-│   ├─ logger: 日志模块
-│   ├─ api: API后端模块
-│   │   ├─ auth: 鉴权模块  
-│   │   ├─ model: API请求&响应模型
-│   │   └─ router: API路由
-│   │   │   ├─ v1: v1版本
-│   │   │   │   ├─ user: 用户路由
-│   │   │   │   ├─ key: 密钥路由
-│   │   │   │   ├─ session: 对话路由
-│   │   │   │   ├─ vector_db: 向量数据库路由
-│   │   │   │   └─ model: 模型路由
-│   │   │   │         ├─ llm: 大语言模型路由
-│   │   │   │         └─ embedding: 词嵌入模路由
-│   │   │   └─ root: 根路由（健康检查用）
-│   ├─ langchain: Langchain组件
-│   │   ├─ callback.py: 回调（实现SSE）
-│   │   ├─ chain.py: 链（实现Chat & RAG）
-│   │   ├─ memory.py: 上下文记忆（实现sql backend和windows memory）
-│   │   ├─ prompt.py: 提示词（实现chat & RAG rompt template）
-│   │   ├─ embedding.py: 词嵌入模型
-│   │   ├─ llm.py: 大语言模型
-│   │   ├─ retriever: 向量数据库检索
-│   │   └─ text_splitter: 文档分块
-│   └─ webui: WebUI模块
-├─ poetry.lock: 项目依赖
-└─ pyproject.toml: 项目配置
+├─ alice_api.py: Start the API server
+├─ alice_webui.py: Start the WebUI
+├─ confs: Configuration files
+│   ├─ deployment: For production environment
+│   └─ local: For local environment
+├─ envs: Environment variables
+│   ├─ deployment: For production environment
+│   └─ local: For local environment
+├─ docker: Container deployment files
+│   ├─ deployment: For production environment deployment
+│   └─ local: For local environment debugging (only start Mysql and Redis)
+├─ pages: streamlit pages
+│   ├─ chat.py: Dialogue interface
+│   └─ vector_db.py: Vector database operation interface
+├─ src: Internal modules
+│   ├─ deployment: For production environment
+│   └─ local: For local environment
+│   ├─ config: Read environment variables and configuration files
+│   ├─ logger: Log module
+│   ├─ api: API backend module  
+│   │   ├─ auth: Authentication module  
+│   │   ├─ model: API request & response model
+│   │   └─ router: API router
+│   │   │   ├─ v1: v1 version
+│   │   │   │   ├─ user: User router
+│   │   │   │   ├─ key: Key router
+│   │   │   │   ├─ session: Dialogue router
+│   │   │   │   ├─ vector_db: Vector database router
+│   │   │   │   └─ model: Model router
+│   │   │   │         ├─ llm: Large language model router
+│   │   │   │         └─ embedding: Word embedding model router
+│   │   │   └─ root: Root router (for health check)
+│   ├─ langchain: Langchain component
+│   │   ├─ callback.py: Callback (implement SSE)
+│   │   ├─ chain.py: Chain (implement Chat & RAG)
+│   │   ├─ memory.py: Context memory (implement sql backend and windows memory)
+│   │   ├─ prompt.py: Prompt (implement chat & RAG rompt template)
+│   │   ├─ embedding.py: Word embedding model
+│   │   ├─ llm.py: Large language model
+│   │   ├─ retriever: Vector database retrieval
+│   │   └─ text_splitter: Document chunking
+│   └─ webui: WebUI module
+├─ poetry.lock: Project dependencies
+└─ pyproject.toml: Project configuration
 ```
 
-## 本地部署
+## Local Deployment
 
-### 克隆仓库
+### Clone the Repository
 
 ```bash
 git clone https://github.com/hcd233/Alice-AI
 cd Alice-AI
 ```
 
-### 创建虚拟环境（可选）
+### Create a Virtual Environment (Optional)
 
-可以不创建，但是需要确保python环境为3.11
+You can skip this step, but you need to make sure that the python environment is 3.11
 
 ```bash
 conda create -n alice python=3.11.0
 conda activate alice
 ```
 
-### 安装依赖
+### Install Dependencies
 
 ```bash
 pip install poetry
 poetry install
 ```
 
-### 配置conf和env（略）
+### Configure conf and env (Omitted)
 
-见template文件
+See the template file
 
-### 启动Mysql和Redis
+### Start Mysql and Redis
 
 ```bash
 docker-compose -f docker/local/docker-compose.yml up -d
 ```
 
-### 启动API服务器
+### Start the API Server
 
-注意在IDE里指定local/api.env为环境变量
+Note that you need to specify local/api.env as the environment variable in the IDE
 
 ```bash
 python alice_api.py
 ```
 
-### 启动WebUI
+### Start the WebUI
 
-注意在IDE里指定local/webui.env为环境变量
+Note that you need to specify local/webui.env as the environment variable in the IDE
 
 ```bash
 streamlit run alice_webui.py
 ```
 
-### 访问SwaggerUI和WebUI
+### Access SwaggerUI and WebUI
 
 - SwaggerUI: <http://localhost:${API_PORT}/docs>
 - WebUI: <http://localhost:8501>
 
-## Docker部署
+## Docker Deployment
 
-### 配置conf和env（略）
+### Configure conf and env (Omitted)
 
-见template文件
+See the template file
 
-### 构建镜像
+### Build the Image
 
 ```bash
 docker build -f docker/Dockerfile -t alice-ai:latest .
 ```
 
-### 启动容器
+### Start the Container
 
 ```bash
 docker-compose -f docker/deployment/docker-compose.yml up -d --no-build
 ```
 
-### 操作说明
+### Operation Instructions
 
-#### 用户操作
+#### User Operation
 
-1. 对于登录操作，我只做了简单的用户名密码验证，并且没有在WebUI中提供注册功能，请自行调用API接口，并且操作数据库设置管理员身份（is_admin=1），以便接入私有模型
-2. 登录后需要携带jwt token才能操作secret key，secret key用于调用私有模型服务
+1. For login operations, I only did simple username and password verification, and did not provide a registration function in the WebUI. Please call the API interface yourself, and set the administrator status (is_admin=1) in the database operation to access private models
+2. After login, you need to carry a jwt token to operate the secret key, which is used to call the private model service
 
-#### 模型操作
+#### Model Operation
 
-1. 调用通用大模型服务，目前仅支持OpenAI系列模型（或类OpenAI接口的代理），直接在API中接入即可，需要在数据库中储存base、key、max_tokens等信息，同时可以自定义System prompt
-2. 调用私有模型服务，请先把模型部署成类OpenAI接口的API服务（例如llama.cpp-python），然后按照第一条的操作即可
+1. Call the general large model service, which currently only supports the OpenAI series models (or agents with OpenAI-like interfaces). You can access it directly in the API. You need to store information such as base, key, max_tokens in the database, and you can customize the System prompt
+2. Call the private model service, please deploy the model as an API service with an OpenAI-like API (such as [llama-cpp-python](https://github.com/abetlen/llama-cpp-python)), and then follow the first The operation of the article can be done
 
-## 项目展望
+## Project Outlook
 
-### 目标
+### Goals
 
-1. 支持接入更多模型（AzureOpenAI、Gemini、HuggingFaceEndpoint、Llama.cpp）
-2. 更多RAG策略（RAG fusion、重排、多路召回等）
-3. 支持多模态Chat & RAG
-4. 支持对同模型维护Key池实现负载均衡
-5. 支持Agent和工具调用
-6. 发布微调的私有模型
+1. Support access to more models (AzureOpenAI, Gemini, HuggingFaceEndpoint, Llama.cpp)
+2. More RAG strategies (RAG fusion, rearrangement, multi-path recall, etc.)
+3. Support multi-modal Chat & RAG
+4. Support maintaining a Key pool for the same model to achieve load balancing
+5. Support Agent and tool calls
+6. Release fine-tuned private models
 
-### 作者状态
+### Author Status
 
-因为工作繁忙，项目进度可能会比较慢，随缘更新一下，欢迎PR和Issue
+Due to my busy work schedule, the project progress may be relatively slow, and I will update it occasionally. PRs and Issues are welcome
