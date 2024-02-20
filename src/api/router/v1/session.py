@@ -181,12 +181,11 @@ async def get_session(session_id: str, info: Tuple[int, int] = Depends(sk_auth))
 
 
 @session_router.delete("/{session_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
-async def delete_session(session_id: int, uid: int = -1, info: Tuple[int, int] = Depends(sk_auth)):
+async def delete_session(session_id: int, uid: int = None, info: Tuple[int, int] = Depends(sk_auth)):
     _uid, level = info
-    if not (level or _uid == uid):
-        return StandardResponse(code=1, status="error", message="no permission")
-
-    if uid == -1:
+    if not level and uid and uid != _uid:
+        return StandardResponse(code=1, status="error", message="No permission")
+    if not uid:
         uid = _uid
 
     redis_set = f"uid:{uid}:session_ids"
