@@ -4,7 +4,7 @@ from typing import Any, Dict
 import streamlit as st
 from streamlit import session_state as cache
 
-from internal.webui.utils import get_embedding_info, get_embeddings, get_vector_db_info, get_vector_dbs, new_vector_db, upload_files, upload_urls
+from src.webui.utils import get_embedding_info, get_embeddings, get_vector_db_info, get_vector_dbs, new_vector_db, upload_files, upload_urls
 
 ABOUT = """\
 ### Alice AI is a project of providing private llm api and webui service

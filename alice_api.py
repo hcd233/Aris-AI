@@ -1,7 +1,7 @@
 import uvicorn
 
-from internal.api import create_app
-from internal.config import API_PORT
+from src.api import create_app
+from src.config import API_PORT
 
 
 def main() -> None:

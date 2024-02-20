@@ -3,7 +3,7 @@ from typing import Any, Dict
 import streamlit as st
 from streamlit import session_state as cache
 
-from internal.webui.utils import chat, get_history, get_llms, get_sessions, get_vector_dbs, new_session, retriever_qa
+from src.webui.utils import chat, get_history, get_llms, get_sessions, get_vector_dbs, new_session, retriever_qa
 
 ABOUT = """\
 ### Alice AI is a project of providing private llm api and webui service
