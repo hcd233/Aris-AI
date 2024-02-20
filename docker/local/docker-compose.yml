@@ -8,7 +8,7 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - mysql-data:/var/lib/alice-mysql
+      - mysql-data:/var/lib/mysql
     healthcheck:
       test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u$$MYSQL_USER -p$$MYSQL_PASSWORD" ]
       interval: 5s
