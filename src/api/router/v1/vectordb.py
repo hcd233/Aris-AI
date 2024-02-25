@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 from hashlib import sha256
 from json import dumps, loads
@@ -11,7 +10,9 @@ from sqlalchemy import or_
 
 from src.config import FAISS_ROOT
 from src.langchain.embedding import init_embedding
-from src.langchain.text_splitter import load_upload_files, load_upload_urls, split_documents
+from src.langchain.file_loader import load_upload_files
+from src.langchain.text_splitter import split_documents
+from src.langchain.url_loader import load_upload_urls
 from src.logger import logger
 from src.middleware.mysql import session
 from src.middleware.mysql.model import EmbeddingSchema, VectorDbSchema
@@ -127,6 +128,7 @@ def get_vector_db(vector_db_id: int, info: Tuple[str, str] = Depends(sk_auth)):
                 VectorDbSchema.db_size,
                 EmbeddingSchema.embedding_name,
             )
+            .join(EmbeddingSchema, VectorDbSchema.embedding_id == EmbeddingSchema.embedding_id)
             .filter(VectorDbSchema.vector_db_id == vector_db_id)
             .filter(VectorDbSchema.uid == uid)
             .filter(or_(VectorDbSchema.delete_at.is_(None), datetime.now() < VectorDbSchema.delete_at))
@@ -292,7 +294,7 @@ def upload_urls_to_vector_db(
     urls: List[str],
     chunk_size: int,
     chunk_overlap: int,
-    url_type: Literal["arxiv", "single", "recursive"],
+    url_type: Literal["arxiv", "git", "render", "recursive"],
     background_tasks: BackgroundTasks,
     info: Tuple[str, str] = Depends(sk_auth),
 ):
@@ -353,21 +355,6 @@ def upload_urls_to_vector_db(
     existed = []
     invalid = []
 
-    _urls = []
-    for url in urls:
-        try:
-            if url_type == "arxiv":
-                _match = re.match(r"(https://|http://|)arxiv.org/abs/(\d+\.\d+)", url)
-                if not _match:
-                    raise ValueError(f"Invalid arxiv url: {url}")
-                url = _match.group(2)
-
-            _urls.append(url)
-        except Exception as e:
-            logger.error(f"Processing {url} occurs error: {e}")
-            invalid.append(url)
-
-    urls = _urls
     if (file_dir / "urls.jsonl").exists():
         with (file_dir / "urls.jsonl").open("r") as fp:
             uploaded_urls = set([loads(line)["urls"] for line in fp.readlines() if line.strip()])
