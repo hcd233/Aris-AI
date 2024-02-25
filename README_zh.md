@@ -52,7 +52,7 @@
 1. 用户注册、登录、权限管理
 2. 对话管理、历史记录管理
 3. 模型(LLM、Embedding)管理、预设(System)提示词管理
-4. 向量数据库管理、向量数据库插入、支持文件: Pdf、Markdown、HTML和TXT格式的文件和Arxiv文章链接、链接递归插入
+4. 向量数据库管理、向量数据库插入、支持文件: Pdf、Markdown、HTML和TXT格式的文件和Arxiv文章链接、Git链接、自动化工具获取网页动态内容插入、链接递归插入
 
 ### 模型服务相关
 
@@ -107,6 +107,8 @@
 │   │   ├─ embedding.py: 词嵌入模型
 │   │   ├─ llm.py: 大语言模型
 │   │   ├─ retriever: 向量数据库检索
+│   │   ├─ url_loader: 导入链接的组件
+│   │   ├─ file_loader: 导入文件的组件
 │   │   └─ text_splitter: 文档分块
 │   └─ webui: WebUI模块
 ├─ poetry.lock: 项目依赖

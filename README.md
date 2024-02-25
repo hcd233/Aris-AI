@@ -52,7 +52,7 @@ This is a project that provides **private large language model services**, aimin
 1. User registration, login, permission management
 2. Dialogue management, history management
 3. Model (LLM, Embedding) management, preset (System) prompt management
-4. Vector database management, vector database insertion, supported files: Pdf, Markdown, HTML and TXT format files and Arxiv article links, link recursive insertion
+4. Vector database management, vector database insertion, supported files: Pdf, Markdown, HTML and TXT format files and Arxiv article links, Git Repo link, automated tool to get web dynamic content insertion, link recursive insertion
 
 ### Model Service Related
 
@@ -107,6 +107,8 @@ This is a project that provides **private large language model services**, aimin
 │   │   ├─ embedding.py: Word embedding model
 │   │   ├─ llm.py: Large language model
 │   │   ├─ retriever: Vector database retrieval
+│   │   ├─ url_loader: Component for importing links
+│   │   ├─ file_loader: Component for importing files
 │   │   └─ text_splitter: Document chunking
 │   └─ webui: WebUI module
 ├─ poetry.lock: Project dependencies
