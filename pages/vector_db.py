@@ -138,7 +138,7 @@ def body():
             chunk_size, chunk_overlap, url_type = st.columns(3)
             chunk_size = chunk_size.number_input("Chunk Size", min_value=64, max_value=info.get("chunk_size") * 2, step=64)
             chunk_overlap = chunk_overlap.number_input("Chunk Overlap", min_value=0, max_value=info.get("chunk_size"), step=16)
-            url_type = url_type.selectbox("Url Type", options=["arxiv", "single", "recursive"])
+            url_type = url_type.selectbox("Url Type", options=["arxiv", "git", "render", "recursive"])
 
             upload_func = upload_urls
             upload_args = dict(
