@@ -1,6 +1,7 @@
 # Dirs
 .vscode
 faiss
+github_repos
 __pycache__
 # Files
 *.env
