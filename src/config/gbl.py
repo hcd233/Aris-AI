@@ -1,0 +1,32 @@
+
+SUPPORT_URL_TYPE = ["arxiv", "git", "render", "recursive"]
+
+SUPPORT_UPLOAD_FILE = [
+    "txt",
+    "pdf",
+    "ipynb",
+    "cpp",
+    "h",
+    "hpp",
+    "go",
+    "java",
+    "kt",
+    "js",
+    "ts",
+    "php",
+    "proto",
+    "py",
+    "rst",
+    "rb",
+    "rs",
+    "scala",
+    "swift",
+    "md",
+    "tex",
+    "html",
+    "htm",
+    "sol",
+    "cs",
+    "cbl",
+    "cob",
+]
