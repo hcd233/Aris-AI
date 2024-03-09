@@ -67,7 +67,7 @@ def _load_from_recursive(urls: List[str]) -> List[Document]:
         loader = RecursiveUrlLoader(url=url, max_depth=2)
         documents.extend(loader.load())
 
-    transformer = Html2TextTransformer()
+    transformer = Html2TextTransformer(ignore_links=False, ignore_images=False)
     documents = transformer.transform_documents(documents)
 
     return documents
