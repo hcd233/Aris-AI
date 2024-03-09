@@ -8,7 +8,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
 from langchain_community.vectorstores.faiss import FAISS
 from sqlalchemy import or_
 
-from src.config import FAISS_ROOT
+from src.config import FAISS_ROOT, SUPPORT_UPLOAD_FILE
 from src.langchain.embedding import init_embedding
 from src.langchain.file_loader import load_upload_files
 from src.langchain.text_splitter import split_documents
@@ -216,13 +216,12 @@ def upload_files_to_vector_db(
     file_dir.mkdir(parents=True, exist_ok=True)
     faiss_dir.mkdir(parents=True, exist_ok=True)
 
-    existed = []
-    invalid = []
+    existed, invalid = [], []
 
     paths = []
     for file in files:
         path = file_dir.joinpath(file.filename)
-        if path.suffix not in (".pdf", ".txt", ".md", ".html", ".htm"):
+        if path.suffix[1:] not in SUPPORT_UPLOAD_FILE:
             invalid.append(file.filename)
             continue
 

@@ -4,6 +4,7 @@ from typing import Any, Dict
 import streamlit as st
 from streamlit import session_state as cache
 
+from src.config import SUPPORT_UPLOAD_FILE, SUPPORT_URL_TYPE
 from src.webui.utils import get_embedding_info, get_embeddings, get_vector_db_info, get_vector_dbs, new_vector_db, upload_files, upload_urls
 
 ABOUT = """\
@@ -110,7 +111,7 @@ def body():
     upload_type = upload_type.selectbox("Upload Type", options=["file", "url"])
     if upload_type == "file":
         with st.form("upload_files"):
-            files = st.file_uploader("Upload files", type=["txt", "md", "pdf", "html"], accept_multiple_files=True)
+            files = st.file_uploader("Upload files", type=SUPPORT_UPLOAD_FILE, accept_multiple_files=True)
             embedding_id = cache.embedding_name_id_map.get(cache.embedding_name)
             info = get_embedding_info(cache.api_key, embedding_id)
 
@@ -138,7 +139,7 @@ def body():
             chunk_size, chunk_overlap, url_type = st.columns(3)
             chunk_size = chunk_size.number_input("Chunk Size", min_value=64, max_value=info.get("chunk_size") * 2, step=64)
             chunk_overlap = chunk_overlap.number_input("Chunk Overlap", min_value=0, max_value=info.get("chunk_size"), step=16)
-            url_type = url_type.selectbox("Url Type", options=["arxiv", "git", "render", "recursive"])
+            url_type = url_type.selectbox("Url Type", options=SUPPORT_URL_TYPE)
 
             upload_func = upload_urls
             upload_args = dict(
