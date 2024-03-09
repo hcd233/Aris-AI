@@ -5,7 +5,6 @@ from langchain_core.documents import Document
 from langchain.text_splitter import Language, RecursiveCharacterTextSplitter
 from src.logger import logger
 
-
 SUFFIX_LANGUAGE_MAP = {
     "cpp": Language.CPP,
     "h": Language.CPP,

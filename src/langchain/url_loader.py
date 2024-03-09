@@ -10,6 +10,7 @@ from src.logger import logger
 
 from .text_splitter import SUFFIX_LANGUAGE_MAP
 
+
 def _load_from_arxiv(urls: List[str]) -> List[Document]:
     def _match_arxiv_url(url: str) -> str:
         _match = re.match(r"(https://|http://|)(www\.|)arxiv.org/abs/(\d+\.\d+)", url, re.IGNORECASE)
@@ -44,7 +45,9 @@ def _load_from_git(urls: List[str]) -> List[Document]:
         repo_url = _match_git_url(url)
         url = url[: url.rfind(repo_url) + len(repo_url)]
         temp_repo_path = f"./github_repos/{repo_url}/{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        loader = GitLoader(clone_url=url, repo_path=temp_repo_path, branch="master", file_filter=lambda x: any(x.endswith(suffix) for suffix in SUFFIX_LANGUAGE_MAP))
+        loader = GitLoader(
+            clone_url=url, repo_path=temp_repo_path, branch="master", file_filter=lambda x: any(x.endswith(suffix) for suffix in SUFFIX_LANGUAGE_MAP)
+        )
         documents.extend(loader.load())
 
     return documents
