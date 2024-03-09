@@ -24,8 +24,8 @@ SUFFIX_LANGUAGE_MAP = {
     "swift": Language.SWIFT,
     "md": Language.MARKDOWN,
     "tex": Language.LATEX,
-    "html": Language.HTML,
-    "htm": Language.HTML,
+    "html": Language.MARKDOWN,  # converted to markdown
+    "htm": Language.MARKDOWN,  # converted to markdown
     "sol": Language.SOL,
     "cs": Language.CSHARP,
     "cbl": Language.COBOL,
