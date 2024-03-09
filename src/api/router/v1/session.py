@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, Tuple
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from sqlalchemy import or_
@@ -457,10 +457,13 @@ async def retriever_qa(session_id: int, request: RetrieverQARequest, info: Tuple
 
     def _chat_after_save_history(chain: Chain, user_prompt: str, history: BaseChatMessageHistory):
         output = chain.invoke(user_prompt)
-        docs = "```\n" + "\n```\n---\n```\n".join(output["source_documents"]) + "\n```"
-        llm_output = output["result"]
-        history.add_message(SystemMessage(content=docs))
-        history.add_message(HumanMessage(content=user_prompt))
+
+        docs = "```\n" + "\n```\n---\n```\n".join([doc.page_content for doc in output["context"]]) + "\n```"
+
+        user_input = f"context: {docs}\n---\nquestion: {user_prompt}"
+        llm_output = output["answer"]
+
+        history.add_message(HumanMessage(content=user_input))
         history.add_message(AIMessage(content=llm_output))
 
     Thread(target=_chat_after_save_history, args=(chain, request.message, history)).start()

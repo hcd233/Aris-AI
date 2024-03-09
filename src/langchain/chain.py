@@ -1,11 +1,14 @@
 from typing import List
 
-from langchain.callbacks.base import BaseCallbackHandler
-from langchain.chains import ConversationalRetrievalChain, LLMChain, RetrievalQA, StuffDocumentsChain
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.memory import BaseMemory
+from langchain_core.output_parsers.string import StrOutputParser
+from langchain_core.runnables import RunnableConfig, RunnableParallel, RunnablePassthrough, RunnableSerializable
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import ChatOpenAI
+
+from langchain.callbacks.base import BaseCallbackHandler
+from langchain.chains import ConversationalRetrievalChain, LLMChain
+from langchain.prompts import ChatPromptTemplate
 
 
 def init_chat_chain(llm: ChatOpenAI, prompt: ChatPromptTemplate, memory: BaseMemory, callbacks: List[BaseCallbackHandler], **kwargs) -> LLMChain:
@@ -25,27 +28,12 @@ def init_chat_chain(llm: ChatOpenAI, prompt: ChatPromptTemplate, memory: BaseMem
 
 def init_retriever_qa_chain(
     llm: ChatOpenAI, prompt: ChatPromptTemplate, retriever: VectorStoreRetriever, callbacks: List[BaseCallbackHandler], **kwargs
-) -> RetrievalQA:
-    llm_chain = LLMChain(
-        llm=llm,
-        prompt=prompt,
-    )
-    document_prompt = PromptTemplate(input_variables=["page_content"], template="Context:\n{page_content}")
-    combine_documents_chain = StuffDocumentsChain(
-        llm_chain=llm_chain,
-        document_variable_name="context",
-        document_prompt=document_prompt,
-    )
-    chain = RetrievalQA(
-        retriever=retriever,
-        combine_documents_chain=combine_documents_chain,
-        callbacks=callbacks,
-        name="retriever_qa_chain",
-        input_key="user_prompt",
-        verbose=True,
-        return_source_documents=True,
-        **kwargs,
-    )
+) -> RunnableSerializable:
+    output_parser = StrOutputParser()  # convert AI message to string
+
+    config = RunnableConfig(callbacks=callbacks)
+    chain = (prompt | llm | output_parser).with_config(config)
+    chain = RunnableParallel({"context": retriever, "question": RunnablePassthrough()}).assign(answer=chain)
     return chain
 
 

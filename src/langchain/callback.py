@@ -55,8 +55,8 @@ class StreamCallbackHandler(BaseCallbackHandler):
         self.chain_num += 1
 
     def on_chain_end(self, outputs: Dict[str, Any], *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any) -> Any:
-        if "source_documents" in outputs:
-            outputs["source_documents"] = [doc.page_content for doc in outputs["source_documents"]]
+        if "context" in outputs:
+            outputs["context"] = [doc.page_content for doc in outputs["context"]]
         data = SSEResponse(status="chain:end", delta="", extras={"outputs": outputs})
         self.token_generator.send(data.model_dump_json())
         self.chain_num -= 1
