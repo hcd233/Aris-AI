@@ -4,6 +4,7 @@ from typing import List
 
 from altair import Literal
 from langchain_community.document_loaders import ArxivLoader, GitLoader, RecursiveUrlLoader, SeleniumURLLoader
+from langchain_community.document_transformers import Html2TextTransformer
 from langchain_core.documents import Document
 
 from src.logger import logger
@@ -55,7 +56,6 @@ def _load_from_git(urls: List[str]) -> List[Document]:
 
 def _load_from_selenium(urls: List[str]) -> List[Document]:
     loader = SeleniumURLLoader(urls=urls)
-
     documents = loader.load()
 
     return documents
@@ -63,10 +63,12 @@ def _load_from_selenium(urls: List[str]) -> List[Document]:
 
 def _load_from_recursive(urls: List[str]) -> List[Document]:
     documents = []
-
     for url in urls:
         loader = RecursiveUrlLoader(url=url, max_depth=2)
         documents.extend(loader.load())
+
+    transformer = Html2TextTransformer()
+    documents = transformer.transform_documents(documents)
 
     return documents
 

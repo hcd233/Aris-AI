@@ -39,10 +39,17 @@ def split_documents(documents: List[Document], chunk_size: int, chunk_overlap: i
     for doc in documents:
         params = {"chunk_size": chunk_size, "chunk_overlap": chunk_overlap}
 
-        suffix = doc.metadata.get("source", ".").split(".")[-1]
-        if suffix in SUFFIX_LANGUAGE_MAP:
+        source: str = doc.metadata.get("source", ".")
+
+        if source.split(".")[-1] in SUFFIX_LANGUAGE_MAP:
             splitter_cls = RecursiveCharacterTextSplitter
+            suffix = source.split(".")[-1]
             params.update({"separators": splitter_cls.get_separators_for_language(SUFFIX_LANGUAGE_MAP[suffix])})
+
+        elif any([source.startswith(prefix) for prefix in ["https://", "http://", "www."]]):
+            splitter_cls = RecursiveCharacterTextSplitter
+            params.update({"separators": splitter_cls.get_separators_for_language(SUFFIX_LANGUAGE_MAP["md"])})
+
         else:
             splitter_cls = RecursiveCharacterTextSplitter
 
