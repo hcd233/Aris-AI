@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Python package
+name: Docker build
 
 on:
   push:
@@ -12,7 +12,6 @@ on:
 
 env:
   IMAGE_NAME: alice-ai
-  VERSION: ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags/')}}
 
 jobs:
   build:
@@ -32,12 +31,6 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install flake8 pytest poetry
-        poetry config virtualenvs.create false
-        poetry install --no-root
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -47,8 +40,21 @@ jobs:
 
     - name: Build image
       run: docker build . --file docker/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
+    
     - name: Log in to registry
       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+  
+    - name: Set image tag
+      run: |
+        if [[ ${{ github.event_name }} == 'push' && ${{ github.ref }} == 'refs/heads/master' ]]; then
+          echo "Setting version to latest"
+          echo "VERSION=latest" >> $GITHUB_ENV
+        elif [[ ${{ github.event_name }} == 'push' && ${{ github.ref }} == refs/tags/* ]]; then
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "Setting version to $TAG_NAME"
+          echo "VERSION=$TAG_NAME" >> $GITHUB_ENV
+        fi
+  
     - name: Push image
       run: |
         IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
