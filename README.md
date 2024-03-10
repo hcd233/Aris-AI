@@ -180,12 +180,6 @@ streamlit run alice_webui.py
 
 See the template file
 
-### Build the Image
-
-```bash
-docker build -f docker/Dockerfile -t alice-ai:latest .
-```
-
 ### Start the Container
 
 ```bash

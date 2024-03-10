@@ -180,12 +180,6 @@ streamlit run alice_webui.py
 
 见template文件
 
-### 构建镜像
-
-```bash
-docker build -f docker/Dockerfile -t alice-ai:latest .
-```
-
 ### 启动容器
 
 ```bash
