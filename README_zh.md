@@ -52,14 +52,17 @@
 1. 用户注册、登录、权限管理
 2. 对话管理、历史记录管理
 3. 模型(LLM、Embedding)管理、预设(System)提示词管理
-4. 向量数据库管理、向量数据库插入、支持文件: Pdf、Markdown、HTML和TXT格式的文件和Arxiv文章链接、Git链接、自动化工具获取网页动态内容插入、链接递归插入
+4. 向量数据库管理、向量数据库插入、支持:
+
+- 文件: Pdf、Markdown、HTML、Jupyter、TXT、Python、C++、Java等多种代码文件
+- 链接: Arxiv、Git、无鉴权url(支持递归爬取、自动化工具爬取)
 
 ### 模型服务相关
 
 1. Chat: 支持多轮对话
 2. Retriever QA: 支持(RAG)检索增强生成的问答
 
-### Web界面
+### Web界面相关
 
 1. 提供上传知识库的界面
 2. 提供对话界面
@@ -173,7 +176,7 @@ streamlit run alice_webui.py
 
 ## Docker部署
 
-### 配置conf和env（略）
+### 配置conf和env（同上）
 
 见template文件
 

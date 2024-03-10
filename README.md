@@ -52,7 +52,10 @@ This is a project that provides **private large language model services**, aimin
 1. User registration, login, permission management
 2. Dialogue management, history management
 3. Model (LLM, Embedding) management, preset (System) prompt management
-4. Vector database management, vector database insertion, supported files: Pdf, Markdown, HTML and TXT format files and Arxiv article links, Git Repo link, automated tool to get web dynamic content insertion, link recursive insertion
+4. Vector database management, vector database insertion, support:
+
+- Files: Pdf, Markdown, HTML, Jupyter, TXT, Python, C++, Java and other code files
+- Links: Arxiv, Git, unauthenticated url (supports recursive crawling, automated tool crawling)
 
 ### Model Service Related
 
@@ -173,7 +176,7 @@ streamlit run alice_webui.py
 
 ## Docker Deployment
 
-### Configure conf and env (Omitted)
+### Configure conf and env (As above)
 
 See the template file
 
