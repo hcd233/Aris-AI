@@ -1,14 +1,9 @@
-import datetime
-from typing import Tuple
-
-from fastapi import APIRouter, Depends
-from sqlalchemy import or_
+from fastapi import APIRouter
 
 from src.middleware.jwt import encode_token
 from src.middleware.mysql import session
-from src.middleware.mysql.model import ApiKeySchema, UserSchema
+from src.middleware.mysql.model import UserSchema
 
-from ...auth import jwt_auth
 from ...model.request import UserRequest
 from ...model.response import StandardResponse
 
