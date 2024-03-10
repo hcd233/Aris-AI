@@ -12,6 +12,7 @@ on:
 
 env:
   IMAGE_NAME: alice-ai
+  VERSION: ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags/')}}
 
 jobs:
   build:
