@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   alice-ai-api:
-    image: alice-ai:latest
+    image: ghcr.io/hcd233/alice-ai:latest
     container_name: alice-ai-api
     privileged: true
     build:
@@ -27,7 +27,7 @@ services:
         condition: service_healthy
 
   alice-ai-webui:
-    image: alice-ai:latest
+    image: ghcr.io/hcd233/alice-ai:latest
     container_name: alice-ai-webui
     privileged: true
     build:
