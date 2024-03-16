@@ -15,7 +15,7 @@ from src.langchain.text_splitter import split_documents
 from src.langchain.url_loader import load_upload_urls
 from src.logger import logger
 from src.middleware.mysql import session
-from src.middleware.mysql.model import EmbeddingSchema, VectorDbSchema
+from src.middleware.mysql.models import EmbeddingSchema, VectorDbSchema
 
 from ...auth import sk_auth
 from ...model.request import CreateVectorDbRequest

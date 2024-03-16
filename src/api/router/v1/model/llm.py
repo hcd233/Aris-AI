@@ -7,7 +7,7 @@ from sqlalchemy import func, or_
 
 from src.langchain.llm import init_llm, ping_llm
 from src.middleware.mysql import session
-from src.middleware.mysql.model import LLMSchema
+from src.middleware.mysql.models import LLMSchema
 from src.middleware.redis import r
 
 from ....auth import jwt_auth, sk_auth

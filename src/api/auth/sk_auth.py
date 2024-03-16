@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy import or_
 
 from src.middleware.mysql import session
-from src.middleware.mysql.model import ApiKeySchema, UserSchema
+from src.middleware.mysql.models import ApiKeySchema, UserSchema
 
 from .base import bearer_scheme
 

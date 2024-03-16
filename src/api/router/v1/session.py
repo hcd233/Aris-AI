@@ -21,9 +21,9 @@ from src.langchain.prompt import init_chat_prompt, init_retriever_prompt
 from src.langchain.retriever import init_retriever
 from src.logger import logger
 from src.middleware.mysql import session
-from src.middleware.mysql.model import (LLMSchema, MessageSchema,
+from src.middleware.mysql.models import (LLMSchema, MessageSchema,
                                         SessionSchema, VectorDbSchema)
-from src.middleware.mysql.model.embeddings import EmbeddingSchema
+from src.middleware.mysql.models.embeddings import EmbeddingSchema
 from src.middleware.redis import r
 
 from ...auth import sk_auth

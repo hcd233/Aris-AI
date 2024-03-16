@@ -9,7 +9,7 @@ from langchain_core.messages import BaseMessage, message_to_dict, messages_from_
 from langchain.memory import ConversationBufferWindowMemory
 from langchain.memory.chat_memory import BaseChatMemory
 from src.middleware.mysql import MYSQL_LINK
-from src.middleware.mysql.model import MessageSchema
+from src.middleware.mysql.models import MessageSchema
 
 
 class SessionsMessageConverter(BaseMessageConverter):

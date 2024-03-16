@@ -5,7 +5,7 @@ from sqlalchemy.orm.session import Session
 from src.config import MYSQL_DATABASE, MYSQL_HOST, MYSQL_PASSWORD, MYSQL_PORT, MYSQL_USER
 from src.logger import logger
 
-from .model import BaseSchema
+from .models import BaseSchema
 
 MYSQL_LINK = f"mysql+mysqlconnector://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
 

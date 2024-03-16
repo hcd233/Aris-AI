@@ -7,7 +7,7 @@ from sqlalchemy import func, or_
 
 from src.langchain.embedding import init_embedding, ping_embedding
 from src.middleware.mysql import session
-from src.middleware.mysql.model import EmbeddingSchema
+from src.middleware.mysql.models import EmbeddingSchema
 from src.middleware.redis import r
 
 from ....auth import jwt_auth, sk_auth

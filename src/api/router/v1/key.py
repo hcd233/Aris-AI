@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import or_
 
 from src.middleware.mysql import session
-from src.middleware.mysql.model import ApiKeySchema, UserSchema
+from src.middleware.mysql.models import ApiKeySchema, UserSchema
 
 from ...auth import jwt_auth
 from ...model.response import StandardResponse

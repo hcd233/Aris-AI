@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from src.middleware.jwt import encode_token
 from src.middleware.mysql import session
-from src.middleware.mysql.model import UserSchema
+from src.middleware.mysql.models import UserSchema
 
 from ...model.request import UserRequest
 from ...model.response import StandardResponse
