@@ -1,10 +1,10 @@
-# Alice-AI
+# Aris-AI
 
 [ English | [简体中文](README_zh.md) ]
 
 ## Introduction
 
-This is a project that provides **private large language model services**, aiming to quickly access general large models (GPT3.5, GPT4) and private models (Qwen1.5, ChatGLM3, LLama2, Baichuan2, etc.) services, providing a unified API interface. Relying on the langchain framework to provide multi-turn dialogue (Chat) and retrieval augmented generation (RAG) services, the project name comes from the character Alice in Blue Archive, as shown in the figure below
+This is a project that provides **private large language model services**, aiming to quickly access general large models (GPT3.5, GPT4) and private models (Qwen1.5, ChatGLM3, LLama2, Baichuan2, etc.) services, providing a unified API interface. Relying on the langchain framework to provide multi-turn dialogue (Chat) and retrieval augmented generation (RAG) services, the project name comes from the character Aris in Blue Archive, as shown in the figure below
 
 <div style="text-align: center;">
   <img src="assets/110531412.jpg" style="width: 50%;" />
@@ -70,8 +70,8 @@ This is a project that provides **private large language model services**, aimin
 ## Project Structure
 
 ```text
-├─ alice_api.py: Start the API server
-├─ alice_webui.py: Start the WebUI
+├─ aris_api.py: Start the API server
+├─ aris_webui.py: Start the WebUI
 ├─ confs: Configuration files
 │   ├─ deployment: For production environment
 │   └─ local: For local environment
@@ -123,8 +123,8 @@ This is a project that provides **private large language model services**, aimin
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/hcd233/Alice-AI
-cd Alice-AI
+git clone https://github.com/hcd233/Aris-AI
+cd Aris-AI
 ```
 
 ### Create a Virtual Environment (Optional)
@@ -132,8 +132,8 @@ cd Alice-AI
 You can skip this step, but you need to make sure that the python environment is 3.11
 
 ```bash
-conda create -n alice python=3.11.0
-conda activate alice
+conda create -n aris python=3.11.0
+conda activate aris
 ```
 
 ### Install Dependencies
@@ -158,7 +158,7 @@ docker-compose -f docker/local/docker-compose.yml up -d
 Note that you need to specify local/api.env as the environment variable in the IDE
 
 ```bash
-python alice_api.py
+python aris_api.py
 ```
 
 ### Start the WebUI
@@ -166,7 +166,7 @@ python alice_api.py
 Note that you need to specify local/webui.env as the environment variable in the IDE
 
 ```bash
-streamlit run alice_webui.py
+streamlit run aris_webui.py
 ```
 
 ### Access SwaggerUI and WebUI

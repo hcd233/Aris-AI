@@ -14,7 +14,7 @@ def generate_api_key_secret() -> str:
     """\
     Generate a random string with length 32.
     """
-    return "sk-alice" + "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
+    return "sk-aris" + "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
 
 
 class ApiKeySchema(BaseSchema):

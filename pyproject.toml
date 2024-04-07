@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "alice-ai"
+name = "aris-ai"
 version = "0.1.0"
 description = "An LLM ai application"
 authors = ["centonhuang", "freshsaltedfish"]

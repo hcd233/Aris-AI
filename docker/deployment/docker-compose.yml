@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  alice-ai-api:
-    image: ghcr.io/hcd233/alice-ai:latest
-    container_name: alice-ai-api
+  aris-ai-api:
+    image: ghcr.io/hcd233/aris-ai:latest
+    container_name: aris-ai-api
     privileged: true
     build:
       context: .
@@ -15,20 +15,20 @@ services:
     env_file:
       - ../../envs/deployment/api.env
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://alice-ai-api:8080/root/"]
+      test: ["CMD-SHELL", "curl -f http://aris-ai-api:8080/root/"]
       interval: 10s
       timeout: 5s
       retries: 2
     entrypoint: [
-      "python", "alice_api.py",
+      "python", "aris_api.py",
     ]
     depends_on:
-      alice-ai-mysql:
+      aris-ai-mysql:
         condition: service_healthy
 
-  alice-ai-webui:
-    image: ghcr.io/hcd233/alice-ai:latest
-    container_name: alice-ai-webui
+  aris-ai-webui:
+    image: ghcr.io/hcd233/aris-ai:latest
+    container_name: aris-ai-webui
     privileged: true
     build:
       context: .
@@ -38,38 +38,38 @@ services:
     env_file:
       - ../../envs/deployment/webui.env
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://alice-ai-webui:8501"]
+      test: ["CMD-SHELL", "curl -f http://aris-ai-webui:8501"]
       interval: 10s
       timeout: 5s
       retries: 2
     entrypoint: [
       "streamlit", "run", 
-      "alice_webui.py",
+      "aris_webui.py",
       "--client.showSidebarNavigation", "false",
       "--runner.magicEnabled", "false",
       "--browser.gatherUsageStats", "false",
       "--server.maxUploadSize", "100",
     ]
     depends_on:
-      alice-ai-api:
+      aris-ai-api:
         condition: service_healthy    
 
-  alice-ai-mysql:
+  aris-ai-mysql:
     image: mysql:latest
-    container_name: alice-ai-mysql
+    container_name: aris-ai-mysql
     privileged: true
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD-SHELL", "mysqladmin ping -h alice-ai-mysql -P 3306 -u$$MYSQL_USER -p$$MYSQL_PASSWORD" ]
+      test: [ "CMD-SHELL", "mysqladmin ping -h aris-ai-mysql -P 3306 -u$$MYSQL_USER -p$$MYSQL_PASSWORD" ]
       interval: 5s
       retries: 10
     env_file:
       - ../../envs/deployment/mysql.env
 
-  alice-ai-redis:
+  aris-ai-redis:
     image: bitnami/redis:latest
-    container_name: alice-ai-redis
+    container_name: aris-ai-redis
     privileged: true
     volumes:
       - redis-data:/data

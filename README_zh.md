@@ -1,10 +1,10 @@
-# Alice-AI
+# Aris-AI
 
 [ [English](README.md) | 简体中文 ]
 
 ## 介绍
 
-这是一个提供**私有化大语言模型服务**的项目，目的是为了快速接入通用大模型(GPT3.5、GPT4)和私有模型(Qwen1.5、ChatGLM3、LLama2、Baichuan2等)服务，提供统一的API接口。依托langchain框架提供多轮对话（Chat）和检索增强生成（RAG）服务，项目名来源于Blue Archive中的角色Alice，如下图
+这是一个提供**私有化大语言模型服务**的项目，目的是为了快速接入通用大模型(GPT3.5、GPT4)和私有模型(Qwen1.5、ChatGLM3、LLama2、Baichuan2等)服务，提供统一的API接口。依托langchain框架提供多轮对话（Chat）和检索增强生成（RAG）服务，项目名来源于Blue Archive中的角色Aris，如下图
 
 <div style="text-align: center;">
   <img src="assets/110531412.jpg" style="width: 50%;" />
@@ -70,8 +70,8 @@
 ## 项目结构
 
 ```text
-├─ alice_api.py: 启动API服务器
-├─ alice_webui.py: 启动WebUI
+├─ aris_api.py: 启动API服务器
+├─ aris_webui.py: 启动WebUI
 ├─ confs: 配置文件
 │   ├─ deployment: 用于正式环境
 │   └─ local: 用于本地环境
@@ -123,8 +123,8 @@
 ### 克隆仓库
 
 ```bash
-git clone https://github.com/hcd233/Alice-AI
-cd Alice-AI
+git clone https://github.com/hcd233/Aris-AI
+cd Aris-AI
 ```
 
 ### 创建虚拟环境（可选）
@@ -132,8 +132,8 @@ cd Alice-AI
 可以不创建，但是需要确保python环境为3.11
 
 ```bash
-conda create -n alice python=3.11.0
-conda activate alice
+conda create -n aris python=3.11.0
+conda activate aris
 ```
 
 ### 安装依赖
@@ -158,7 +158,7 @@ docker-compose -f docker/local/docker-compose.yml up -d
 注意在IDE里指定local/api.env为环境变量
 
 ```bash
-python alice_api.py
+python aris_api.py
 ```
 
 ### 启动WebUI
@@ -166,7 +166,7 @@ python alice_api.py
 注意在IDE里指定local/webui.env为环境变量
 
 ```bash
-streamlit run alice_webui.py
+streamlit run aris_webui.py
 ```
 
 ### 访问SwaggerUI和WebUI

@@ -10,4 +10,4 @@ RUN pip install poetry
 RUN poetry config virtualenvs.create false
 RUN poetry install --no-root
 
-# docker build -f docker/Dockerfile -t alice-ai:latest .
+# docker build -f docker/Dockerfile -t aris-ai:latest .

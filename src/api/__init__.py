@@ -9,7 +9,7 @@ from .router import root_router, v1_router
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="Alice AI API",
+        title="Aris AI API",
         version="0.1.0",
         # forbidden to route any docs
         redoc_url="/redoc" if DEBUG_MODE else None,

@@ -8,7 +8,7 @@ from src.config import SUPPORT_UPLOAD_FILE, SUPPORT_URL_TYPE
 from src.webui.utils import get_embedding_info, get_embeddings, get_vector_db_info, get_vector_dbs, new_vector_db, upload_files, upload_urls
 
 ABOUT = """\
-### Alice AI is a project of providing private llm api and webui service
+### Aris AI is a project of providing private llm api and webui service
 #### Author: [hcd233](https://github.com/hcd233)
 #### Tech Stack
 ##### LLM fine-tuning:
@@ -37,13 +37,13 @@ ABOUT = """\
 def init_webui():
     # init streamlit config
     st.set_page_config(
-        page_title="Alice AI Knowledge Base",
+        page_title="Aris AI Knowledge Base",
         page_icon="🍃",
         layout="wide",  # "centered",
         initial_sidebar_state="expanded",
         menu_items={
-            "Get Help": "https://github.com/hcd233/Alice-AI/README.md",
-            "Report a bug": "https://github.com/hcd233/Alice-AI/issues/new",
+            "Get Help": "https://github.com/hcd233/Aris-AI/README.md",
+            "Report a bug": "https://github.com/hcd233/Aris-AI/issues/new",
             "About": ABOUT,
         },
     )
@@ -64,8 +64,8 @@ def init_webui():
 
 
 def sidebar():
-    st.sidebar.title("Alice AI")
-    cache.api_key = st.sidebar.text_input("Alice Api Key", max_chars=100, type="password", value=cache.api_key)
+    st.sidebar.title("Aris AI")
+    cache.api_key = st.sidebar.text_input("Aris Api Key", max_chars=100, type="password", value=cache.api_key)
     cache.embedding_name_id_map = get_embeddings(cache.api_key)
 
     with st.sidebar.expander("Menu"):

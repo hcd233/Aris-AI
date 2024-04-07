@@ -10,5 +10,5 @@ async def root() -> StandardResponse:
     return StandardResponse(
         code=0,
         status="success",
-        message="Welcome to alice ai api!",
+        message="Welcome to aris ai api!",
     )

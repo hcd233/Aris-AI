@@ -960,16 +960,16 @@ replica-priority 100
 # and subtractive rules will CHANGE MEANING depending on the ordering.
 # For instance see the following example:
 #
-#   user alice on +@all -DEBUG ~* >somepassword
+#   user aris on +@all -DEBUG ~* >somepassword
 #
-# This will allow "alice" to use all the commands with the exception of the
+# This will allow "aris" to use all the commands with the exception of the
 # DEBUG command, since +@all added all the commands to the set of the commands
-# alice can use, and later DEBUG was removed. However if we invert the order
+# aris can use, and later DEBUG was removed. However if we invert the order
 # of two ACL rules the result will be different:
 #
-#   user alice on -DEBUG +@all ~* >somepassword
+#   user aris on -DEBUG +@all ~* >somepassword
 #
-# Now DEBUG was removed when alice had yet no commands in the set of allowed
+# Now DEBUG was removed when aris had yet no commands in the set of allowed
 # commands, later all the commands are added, so the user will be able to
 # execute everything.
 #
