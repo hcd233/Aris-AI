@@ -9,10 +9,10 @@ from langchain_community.vectorstores.faiss import FAISS
 from sqlalchemy import or_
 
 from src.config import FAISS_ROOT, SUPPORT_UPLOAD_FILE
-from src.langchain.embedding import init_embedding
-from src.langchain.file_loader import load_upload_files
-from src.langchain.text_splitter import split_documents
-from src.langchain.url_loader import load_upload_urls
+from src.langchain_aris.embedding import init_embedding
+from src.langchain_aris.file_loader import load_upload_files
+from src.langchain_aris.text_splitter import split_documents
+from src.langchain_aris.url_loader import load_upload_urls
 from src.logger import logger
 from src.middleware.mysql import session
 from src.middleware.mysql.models import EmbeddingSchema, VectorDbSchema

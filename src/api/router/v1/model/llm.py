@@ -5,7 +5,7 @@ from typing import Tuple
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, or_
 
-from src.langchain.llm import init_llm, ping_llm
+from src.langchain_aris.llm import init_llm, ping_llm
 from src.middleware.mysql import session
 from src.middleware.mysql.models import LLMSchema
 from src.middleware.redis import r

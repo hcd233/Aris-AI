@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import or_
 
-from src.langchain.callback import OUTPUT_PARSER_NAME
-from src.langchain.chain import init_chat_chain, init_retriever_qa_chain
+from src.langchain_aris.callback import OUTPUT_PARSER_NAME
+from src.langchain_aris.chain import init_chat_chain, init_retriever_qa_chain
 from src.logger import logger
 from src.middleware.mysql import session
 from src.middleware.mysql.models import LLMSchema, MessageSchema, SessionSchema, VectorDbSchema

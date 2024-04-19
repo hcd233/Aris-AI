@@ -5,7 +5,7 @@ from typing import Tuple
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, or_
 
-from src.langchain.embedding import init_embedding, ping_embedding
+from src.langchain_aris.embedding import init_embedding, ping_embedding
 from src.middleware.mysql import session
 from src.middleware.mysql.models import EmbeddingSchema
 from src.middleware.redis import r
