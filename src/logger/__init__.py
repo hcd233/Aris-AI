@@ -1,15 +1,15 @@
 from pathlib import Path
 from sys import stdout
 
-from loguru import _Logger
 from loguru import logger as _logger
+from loguru._logger import Logger
 
 from src.config import LOGGER_LEVEL, LOGGER_ROOT
 
 from .logger import ERROR_LOG, INFO_LOG, LOG_FORMAT
 
 
-def init_logger() -> _Logger:
+def init_logger() -> Logger:
     log_root = Path(LOGGER_ROOT)
 
     if not log_root.exists():
