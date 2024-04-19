@@ -1,4 +1,3 @@
-from token import OP
 from typing import Dict
 
 from langchain_openai.embeddings import OpenAIEmbeddings
