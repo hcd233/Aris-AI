@@ -1,3 +1,4 @@
+from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import SystemMessage
 from langchain_core.output_parsers.string import StrOutputParser
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
@@ -6,12 +7,11 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_openai import ChatOpenAI
 
-from src.langchain.embedding import init_embedding
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from src.langchain.retriever import init_retriever
-from src.langchain.callback import OUTPUT_PARSER_NAME
-from src.langchain.llm import init_llm
-from src.langchain.memory import init_history
+from src.langchain_aris.callback import OUTPUT_PARSER_NAME
+from src.langchain_aris.embedding import init_embedding
+from src.langchain_aris.llm import init_llm
+from src.langchain_aris.memory import init_history
+from src.langchain_aris.retriever import init_retriever
 from src.middleware.mysql.models import EmbeddingSchema, LLMSchema
 
 

@@ -2,7 +2,7 @@ from typing import Dict
 
 from langchain_openai.chat_models import ChatOpenAI
 
-from src.langchain.callback import LLM_NAME
+from src.langchain_aris.callback import LLM_NAME
 from src.logger import logger
 
 LLM_TYPE_CLS_MAP: Dict[str, ChatOpenAI] = {
