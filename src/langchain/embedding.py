@@ -1,3 +1,4 @@
+from token import OP
 from typing import Dict
 
 from langchain_openai.embeddings import OpenAIEmbeddings
@@ -9,14 +10,13 @@ EMBEDDING_TYPE_CLS_MAP: Dict[str, OpenAIEmbeddings] = {
 }
 
 
-def init_embedding(embedding_type: str, embedding_name: str, api_key: str, base_url: str, chunk_size: int, **kwargs) -> OpenAIEmbeddings | None:
+def init_embedding(embedding_type: str, embedding_name: str, api_key: str, base_url: str, chunk_size: int, **kwargs) -> OpenAIEmbeddings:
     """Init Embedding."""
     embedding_cls = EMBEDDING_TYPE_CLS_MAP.get(embedding_type)
     if not embedding_cls:
-        logger.error(f"Invalid Embedding type: {embedding_type}")
-        return None
+        raise ValueError(f"Invalid Embedding type: {embedding_type}")
 
-    embedding = embedding_cls(
+    embedding: OpenAIEmbeddings = embedding_cls(
         model=embedding_name,
         api_key=api_key,
         base_url=base_url,
