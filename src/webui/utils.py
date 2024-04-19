@@ -219,31 +219,8 @@ def upload_urls(api_key: str, vector_db_id: int, urls: str, chunk_size: int, chu
     return data
 
 
-def chat(api_key: str, session_id: int, message: str, llm_name: str, temperature: float) -> Iterator[str]:
+def chat(api_key: str, session_id: int, message: str, llm_name: str, temperature: float, vector_db_id: int | None = None) -> Iterator[str]:
     url = urljoin(API_URL, f"v1/session/{session_id}/chat")
-    headers = {"Authorization": f"Bearer {api_key}"}
-    data = {
-        "message": message,
-        "llm_name": llm_name,
-        "temperature": temperature,
-    }
-
-    response = requests.post(
-        url=url,
-        headers=headers,
-        json=data,
-        stream=True,
-    )
-
-    for chunk in response.iter_lines():
-        if not chunk:
-            continue
-        chunk = loads(chunk.decode("utf-8"))
-        yield chunk.get("delta", "")
-
-
-def retriever_qa(api_key: str, session_id: int, message: str, llm_name: str, temperature: float, vector_db_id: int):
-    url = urljoin(API_URL, f"v1/session/{session_id}/retriever-qa")
     headers = {"Authorization": f"Bearer {api_key}"}
     data = {
         "message": message,
@@ -262,5 +239,7 @@ def retriever_qa(api_key: str, session_id: int, message: str, llm_name: str, tem
     for chunk in response.iter_lines():
         if not chunk:
             continue
+        if chunk.startswith(b"data:"):
+            chunk = chunk[5:]
         chunk = loads(chunk.decode("utf-8"))
-        yield chunk.get("delta", "")
+        yield chunk.get("data", {}).get("chunk", "")

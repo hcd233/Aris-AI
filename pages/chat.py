@@ -3,7 +3,7 @@ from typing import Any, Dict
 import streamlit as st
 from streamlit import session_state as cache
 
-from src.webui.utils import chat, get_history, get_llms, get_sessions, get_vector_dbs, new_session, retriever_qa
+from src.webui.utils import chat, get_history, get_llms, get_sessions, get_vector_dbs, new_session
 
 ABOUT = """\
 ### Aris AI is a project of providing private llm api and webui service
@@ -132,27 +132,15 @@ def body():
         with container.chat_message("ai"):
             resp = ""
             place_holder = st.empty()
-            if not cache.vector_db_id:
-                for token in chat(
-                    api_key=cache.api_key,
-                    session_id=cache.session_id,
-                    llm_name=cache.llm,
-                    message=prompt,
-                    temperature=cache.temperature,
-                ):
-                    resp += token
-                    place_holder.markdown(resp)
-            else:
-                for token in retriever_qa(
-                    api_key=cache.api_key,
-                    session_id=cache.session_id,
-                    llm_name=cache.llm,
-                    message=prompt,
-                    temperature=cache.temperature,
-                    vector_db_id=cache.vector_db_id,
-                ):
-                    resp += token
-                    place_holder.markdown(resp)
+            for token in chat(
+                api_key=cache.api_key,
+                session_id=cache.session_id,
+                llm_name=cache.llm,
+                message=prompt,
+                temperature=cache.temperature,
+            ):
+                resp += token
+                place_holder.markdown(resp)
 
 
 def main():
