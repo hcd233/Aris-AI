@@ -47,11 +47,4 @@ class ChatRequest(BaseModel):
     llm_name: str
     temperature: float
     message: str
-    # messages: List[Dict[Literal["type", "content"], str]]
-
-
-class RetrieverQARequest(BaseModel):
-    llm_name: str
-    temperature: float
-    message: str
-    vector_db_id: int
+    vector_db_id: int | None = None
