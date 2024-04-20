@@ -223,7 +223,7 @@ async def delete_session(session_id: int, uid: int = None, info: Tuple[int, int]
 
 
 @session_router.post("/{session_id}/chat", dependencies=[Depends(sk_auth)])
-async def retriever_qa(session_id: int, request: ChatRequest, info: Tuple[int, int] = Depends(sk_auth)) -> StandardResponse | SSEResponse:
+async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = Depends(sk_auth)) -> StandardResponse | SSEResponse:
     _uid, _ = info
 
     redis_lock = f"chat_lock:uid:{_uid}"
