@@ -11,7 +11,7 @@ from src.logger import logger
 def init_retriever(vector_db_id: int, embeddings: OpenAIEmbeddings, **kwargs) -> VectorStoreRetriever:
     try:
         local_path = Path(FAISS_ROOT) / str(vector_db_id) / "vector_db"
-        vector_db = FAISS.load_local(local_path, embeddings=embeddings)
+        vector_db = FAISS.load_local(local_path, embeddings=embeddings, allow_dangerous_deserialization=True)
         retriever = vector_db.as_retriever(search_kwargs=kwargs)
 
     except Exception as e:
