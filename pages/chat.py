@@ -138,6 +138,7 @@ def body():
                 llm_name=cache.llm,
                 message=prompt,
                 temperature=cache.temperature,
+                vector_db_id=cache.vector_db_id,
             ):
                 resp += token
                 place_holder.markdown(resp)

@@ -237,9 +237,9 @@ def chat(api_key: str, session_id: int, message: str, llm_name: str, temperature
     )
 
     for chunk in response.iter_lines():
-        if not chunk:
-            continue
         if chunk.startswith(b"data:"):
             chunk = chunk[5:]
         chunk = loads(chunk.decode("utf-8"))
+        if not chunk:
+            continue
         yield chunk.get("data", {}).get("chunk", "")
