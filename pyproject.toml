@@ -6,7 +6,7 @@ authors = ["centonhuang", "freshsaltedfish"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.13"
 loguru = "^0.7.2"
 fastapi = "^0.109.0"
 uvicorn = "^0.27.0"
@@ -23,11 +23,12 @@ pdfminer-six = "^20231228"
 markdown = "^3.5.2"
 arxiv = "^2.1.0"
 pymupdf = "^1.23.22"
-selenium = "^4.17.2"
 gitpython = "^3.1.42"
 html2text = "^2024.2.26"
 nbformat = "^5.9.2"
 nbconvert = "^7.16.2"
+unstructured = "^0.14.5"
+playwright = "^1.44.0"
 
 
 [build-system]
