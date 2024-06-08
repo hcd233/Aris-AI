@@ -74,7 +74,6 @@ async def create_llm(request: CreateLLMRequest, info: Tuple[int, int] = Depends(
         llm = LLMSchema(
             llm_name=request.llm_name,
             llm_type=request.llm_type,
-            request_type=request.request_type,
             base_url=request.base_url,
             api_key=request.api_key,
             sys_name=request.sys_name,

@@ -1,13 +1,11 @@
 import json
-from typing import Any, Literal
+from typing import Any
 
 from langchain_community.chat_message_histories import SQLChatMessageHistory
 from langchain_community.chat_message_histories.sql import BaseMessageConverter
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.messages import BaseMessage, message_to_dict, messages_from_dict
 
-from langchain.memory import ConversationBufferWindowMemory
-from langchain.memory.chat_memory import BaseChatMemory
 from src.middleware.mysql import MYSQL_LINK
 from src.middleware.mysql.models import MessageSchema
 
@@ -38,27 +36,3 @@ def init_history(session_id: int) -> BaseChatMessageHistory:
     )
 
     return history
-
-
-def init_chat_memory(
-    history: BaseChatMessageHistory, request_type: Literal["message", "string"], user_name: str, ai_name: str, **kwargs
-) -> BaseChatMemory:
-    match request_type:
-        case "message":
-            memory = ConversationBufferWindowMemory(
-                chat_memory=history,
-                return_messages=True,
-                **kwargs,
-            )
-        case "string":
-            memory = ConversationBufferWindowMemory(
-                chat_memory=history,
-                human_prefix=user_name,
-                ai_prefix=ai_name,
-                return_messages=False,
-                **kwargs,
-            )
-        case _:
-            raise ValueError(f"Invalid request_type: {request_type}")
-
-    return memory

@@ -15,7 +15,6 @@ class UidRequest(BaseModel):
 class CreateLLMRequest(BaseModel):
     llm_name: str
     llm_type: Literal["openai"]
-    request_type: Literal["string", "message"]
     api_key: str
     base_url: str
     sys_name: str = "system"
