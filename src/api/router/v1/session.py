@@ -270,11 +270,11 @@ async def chat(session_id: int, request: ChatRequest, info: Tuple[int, int] = De
             conn.commit()
             logger.debug(f"Bind LLM: {request.llm_name} to Session: {session_id}")
 
-        chain_kwargs = {
-            "llm_schema": _llm,
-            "temperature": request.temperature,
-            "session_id": session_id,
-        }
+    chain_kwargs = {
+        "llm_schema": _llm,
+        "temperature": request.temperature,
+        "session_id": session_id,
+    }
     if request.vector_db_id:
         with session() as conn:
             query = (
