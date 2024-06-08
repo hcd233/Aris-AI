@@ -11,7 +11,7 @@ class Jupyter2MarkdownTransformer(BaseDocumentTransformer):
             from nbconvert import MarkdownExporter
         except ImportError:
             raise ImportError(
-                """nbformat or nbconvert package not found, please 
+                """nbformat or nbconvert package not found, please
                 install it with `pip install nbformat nbconvert`"""
             )
 

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import List, Literal
 
 from pydantic import BaseModel
 
@@ -40,6 +40,13 @@ class CreateVectorDbRequest(BaseModel):
     vector_db_name: str
     embedding_name: str
     vector_db_description: str = ""
+
+
+class UploadUrlsRequest(BaseModel):
+    urls: List[str]
+    chunk_size: int
+    chunk_overlap: int
+    url_type: Literal["arxiv", "git", "playwright", "recursive"]
 
 
 class ChatRequest(BaseModel):

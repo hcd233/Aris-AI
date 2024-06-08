@@ -2,7 +2,7 @@ from datetime import datetime
 from hashlib import sha256
 from json import dumps, loads
 from pathlib import Path
-from typing import List, Literal, Tuple
+from typing import List, Tuple
 
 from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
 from langchain_community.vectorstores.faiss import FAISS
@@ -18,7 +18,7 @@ from src.middleware.mysql import session
 from src.middleware.mysql.models import EmbeddingSchema, VectorDbSchema
 
 from ...auth import sk_auth
-from ...model.request import CreateVectorDbRequest
+from ...model.request import CreateVectorDbRequest, UploadUrlsRequest
 from ...model.response import StandardResponse
 
 vector_db_router = APIRouter(prefix="/vector-db", tags=["vector-db"])
@@ -153,7 +153,7 @@ def get_vector_db(vector_db_id: int, info: Tuple[str, str] = Depends(sk_auth)):
     return StandardResponse(code=0, status="success", data=data)
 
 
-@vector_db_router.put("/{vector_db_id}/files", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+@vector_db_router.post("/{vector_db_id}/files", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 def upload_files_to_vector_db(
     vector_db_id: int,
     files: List[UploadFile],
@@ -287,13 +287,10 @@ def upload_files_to_vector_db(
     return StandardResponse(code=0, status="success", data=data)
 
 
-@vector_db_router.put("/{vector_db_id}/urls", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+@vector_db_router.post("/{vector_db_id}/urls", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 def upload_urls_to_vector_db(
     vector_db_id: int,
-    urls: List[str],
-    chunk_size: int,
-    chunk_overlap: int,
-    url_type: Literal["arxiv", "git", "render", "recursive"],
+    request: UploadUrlsRequest,
     background_tasks: BackgroundTasks,
     info: Tuple[str, str] = Depends(sk_auth),
 ):
@@ -344,7 +341,7 @@ def upload_urls_to_vector_db(
     embedding_type, embedding_name, base_url, api_key, _chunk_size = result
     embedding = init_embedding(embedding_type, embedding_name, api_key, base_url, _chunk_size)
 
-    chunk_size = min(chunk_size, _chunk_size)
+    chunk_size = min(request.chunk_size, _chunk_size)
 
     dir = Path(FAISS_ROOT).joinpath(str(vector_db_id))
     file_dir, faiss_dir = dir / "files", dir / "vector_db"
@@ -354,18 +351,19 @@ def upload_urls_to_vector_db(
     existed = []
     invalid = []
 
+    urls = set(request.urls)
+
     if (file_dir / "urls.jsonl").exists():
         with (file_dir / "urls.jsonl").open("r") as fp:
             uploaded_urls = set([loads(line)["urls"] for line in fp.readlines() if line.strip()])
-        urls = set(urls)
         existed = list(urls & uploaded_urls)
-        urls = list(urls - set(existed))
+        urls -= set(existed)
 
-    documents = load_upload_urls(urls, url_type)
+    documents = load_upload_urls(list(urls), request.url_type)
     if not documents:
         return StandardResponse(code=1, status="error", message="No document is loaded")
 
-    documents = split_documents(documents, chunk_size, chunk_overlap)
+    documents = split_documents(documents, chunk_size, request.chunk_overlap)
 
     def _embedding_task():
         logger.debug(f"Start async task: embedding {len(documents)} docs for vector_db_id: {vector_db_id}")
@@ -385,7 +383,7 @@ def upload_urls_to_vector_db(
     with (file_dir / "urls.jsonl").open("a") as fp:
         upload_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         for url in urls:
-            data = {"urls": url, "url_type": url_type, "upload_at": upload_at}
+            data = {"urls": url, "url_type": request.url_type, "upload_at": upload_at}
             fp.write(f"{dumps(data, ensure_ascii=False)}\n")
 
     with session() as conn:
@@ -414,7 +412,7 @@ def upload_urls_to_vector_db(
     return StandardResponse(code=0, status="success", data=data)
 
 
-@vector_db_router.delete("/{vector_db_id}/delete", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
+@vector_db_router.delete("/{vector_db_id}", response_model=StandardResponse, dependencies=[Depends(sk_auth)])
 def delete_vector_db(vector_db_id: int, info: Tuple[str, str] = Depends(sk_auth)):
     uid, _ = info
     with session() as conn:

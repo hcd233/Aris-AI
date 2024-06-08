@@ -188,7 +188,7 @@ def upload_files(api_key: str, vector_db_id: int, files: List[UploadedFile], chu
         "chunk_overlap": chunk_overlap,
     }
 
-    response = requests.put(
+    response = requests.post(
         url=url,
         headers=headers,
         params=params,
@@ -202,17 +202,17 @@ def upload_files(api_key: str, vector_db_id: int, files: List[UploadedFile], chu
 def upload_urls(api_key: str, vector_db_id: int, urls: str, chunk_size: int, chunk_overlap: int, url_type: str) -> Dict[str, Any]:
     url = urljoin(API_URL, f"v1/vector-db/{vector_db_id}/urls")
     headers = {"Authorization": f"Bearer {api_key}"}
-    params = {
+    data = {
         "chunk_size": chunk_size,
         "chunk_overlap": chunk_overlap,
         "url_type": url_type,
+        "urls": urls.split('\n'),
     }
 
-    response = requests.put(
+    response = requests.post(
         url=url,
         headers=headers,
-        params=params,
-        json=urls.split("\n"),
+        json=data,
     )
 
     data = parse_response(response, "upload urls")

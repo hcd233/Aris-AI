@@ -1,4 +1,3 @@
-
 SUPPORT_URL_TYPE = ["arxiv", "git", "render", "recursive"]
 
 SUPPORT_UPLOAD_FILE = [

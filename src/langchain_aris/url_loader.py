@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List
 
 from altair import Literal
-from langchain_community.document_loaders import ArxivLoader, GitLoader, RecursiveUrlLoader, SeleniumURLLoader
+from langchain_community.document_loaders import ArxivLoader, GitLoader, RecursiveUrlLoader, PlaywrightURLLoader
 from langchain_community.document_transformers import Html2TextTransformer
 from langchain_core.documents import Document
 
@@ -54,8 +54,8 @@ def _load_from_git(urls: List[str]) -> List[Document]:
     return documents
 
 
-def _load_from_selenium(urls: List[str]) -> List[Document]:
-    loader = SeleniumURLLoader(urls=urls)
+def _load_from_playwright(urls: List[str]) -> List[Document]:
+    loader = PlaywrightURLLoader(urls=urls)
     documents = loader.load()
 
     return documents
@@ -73,14 +73,14 @@ def _load_from_recursive(urls: List[str]) -> List[Document]:
     return documents
 
 
-def load_upload_urls(urls: List[str], url_type: Literal["arxiv", "git", "render", "recursive"]) -> List[Document]:
+def load_upload_urls(urls: List[str], url_type: Literal["arxiv", "git", "playwright", "recursive"]) -> List[Document]:
     match url_type:
         case "arxiv":
             docs = _load_from_arxiv(urls)
         case "git":
             docs = _load_from_git(urls)
-        case "render":
-            docs = _load_from_selenium(urls)
+        case "playwright":
+            docs = _load_from_playwright(urls)
         case "recursive":
             docs = _load_from_recursive(urls)
         case _:
