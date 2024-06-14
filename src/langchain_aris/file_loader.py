@@ -29,7 +29,6 @@ def load_upload_files(paths: List[Path]) -> List[Document]:
                 trans_params = {}
             case _:
                 raise ValueError(f"Unsupported file type: {path.suffix}")
-
         loader = loader_cls(file_path=str(path))
         docs = loader.load()
 

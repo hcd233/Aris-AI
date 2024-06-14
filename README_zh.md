@@ -10,6 +10,10 @@
   <img src="assets/110531412.jpg" style="width: 50%;" />
 </div>
 
+## 更新日志
+
+- [2024-06-15] 使用Neo4j作为存储知识库的数据库
+
 ## 技术栈
 
 ### 微调
@@ -27,7 +31,6 @@
 ### 大模型服务
 
 - Langchain
-- FAISS
 
 ### API后端
 
@@ -36,6 +39,7 @@
 - JWT
 - Mysql
 - Redis
+- Neo4j
 
 ### Web界面
 
@@ -70,52 +74,38 @@
 ## 项目结构
 
 ```text
-├─ aris_api.py: 启动API服务器
-├─ aris_webui.py: 启动WebUI
-├─ confs: 配置文件
-│   ├─ deployment: 用于正式环境
-│   └─ local: 用于本地环境
-├─ envs: 环境变量
-│   ├─ deployment: 用于正式环境
-│   └─ local: 用于本地环境
-├─ docker: 容器部署文件
-│   ├─ deployment: 用于正式环境部署
-│   └─ local: 用于本地环境调试（只启动Mysql和Redis）
-├─ pages: streamlit页面
-│   ├─ chat.py: 对话界面
-│   └─ vector_db.py: 向量数据库操作界面
-├─ src: 内部模块
-│   ├─ deployment: 用于正式环境
-│   └─ local: 用于本地环境
-│   ├─ config: 读取环境变量和配置文件
-│   ├─ logger: 日志模块
-│   ├─ api: API后端模块
-│   │   ├─ auth: 鉴权模块  
-│   │   ├─ model: API请求&响应模型
-│   │   └─ router: API路由
-│   │   │   ├─ v1: v1版本
-│   │   │   │   ├─ user: 用户路由
-│   │   │   │   ├─ key: 密钥路由
-│   │   │   │   ├─ session: 对话路由
-│   │   │   │   ├─ vector_db: 向量数据库路由
-│   │   │   │   └─ model: 模型路由
-│   │   │   │         ├─ llm: 大语言模型路由
-│   │   │   │         └─ embedding: 词嵌入模路由
-│   │   │   └─ root: 根路由（健康检查用）
-│   ├─ langchain: Langchain组件
-│   │   ├─ callback.py: 回调（实现SSE）
-│   │   ├─ chain.py: 链（实现Chat & RAG）
-│   │   ├─ memory.py: 上下文记忆（实现sql backend和windows memory）
-│   │   ├─ prompt.py: 提示词（实现chat & RAG rompt template）
-│   │   ├─ embedding.py: 词嵌入模型
-│   │   ├─ llm.py: 大语言模型
-│   │   ├─ retriever: 向量数据库检索
-│   │   ├─ url_loader: 导入链接的组件
-│   │   ├─ file_loader: 导入文件的组件
-│   │   └─ text_splitter: 文档分块
-│   └─ webui: WebUI模块
-├─ poetry.lock: 项目依赖
-└─ pyproject.toml: 项目配置
+.
+├── assets
+├── confs
+│   ├── deployment
+│   └── local
+├── docker
+│   ├── deployment
+│   └── local
+├── envs
+│   ├── deployment
+│   └── local
+├── kubernetes
+├── logs
+├── pages
+└── src
+    ├── api
+    │   ├── auth
+    │   ├── model
+    │   └── router
+    │       └── v1
+    │           ├── model
+    │           └── oauth2
+    ├── config
+    ├── langchain_aris
+    ├── logger
+    ├── middleware
+    │   ├── jwt
+    │   ├── logger
+    │   ├── mysql
+    │   │   └── models
+    │   └── redis
+    └── webui
 ```
 
 ## 本地部署

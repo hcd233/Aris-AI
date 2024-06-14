@@ -17,7 +17,6 @@ pyjwt = "^2.8.0"
 langchain-openai = "^0.0.5"
 streamlit = "^1.31.0"
 redis = "^5.0.1"
-faiss-cpu = "^1.7.4"
 python-multipart = "^0.0.9"
 pdfminer-six = "^20231228"
 markdown = "^3.5.2"
@@ -30,6 +29,7 @@ nbconvert = "^7.16.2"
 unstructured = "^0.14.5"
 playwright = "^1.44.0"
 flake8 = "^7.0.0"
+neo4j = "^5.21.0"
 
 
 [build-system]

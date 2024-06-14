@@ -81,12 +81,31 @@ services:
     env_file:
       - ../../envs/deployment/redis.env
 
+  aris-ai-neo4j:
+    image: neo4j:latest
+    container_name: aris-ai-neo4j
+    privileged: true
+    ports:
+      - 7474:7474
+      - 7687:7687
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: [ "bin/cypher-shell --format plain \"CALL dbms.cluster.overview()\"" ]
+      interval: 5s
+      retries: 10
+    env_file:
+      - ../../envs/deployment/neo4j.env
+
 volumes:
   mysql-data:
     name: mysql-data
     external: true
   redis-data:
     name: redis-data
+    external: true
+  neo4j-data:
+    name: neo4j-data
     external: true
 
 # docker-compose -f docker/deployment/docker-compose.yml up -d --no-build

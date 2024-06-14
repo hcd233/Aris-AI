@@ -10,6 +10,10 @@ This is a project that provides **private large language model services**, aimin
   <img src="assets/110531412.jpg" style="width: 50%;" />
 </div>
 
+## Change Log
+
+- [2024-06-15] Use Neo4j as the database for storing knowledge bases
+
 ## Tech Stack
 
 ### Fine-tuning
@@ -27,7 +31,6 @@ This is a project that provides **private large language model services**, aimin
 ### Large Language Model Service
 
 - Langchain
-- FAISS
 
 ### API Backend
 
@@ -36,6 +39,7 @@ This is a project that provides **private large language model services**, aimin
 - JWT
 - Mysql
 - Redis
+- Neo4j
 
 ### Web UI
 
@@ -70,52 +74,38 @@ This is a project that provides **private large language model services**, aimin
 ## Project Structure
 
 ```text
-├─ aris_api.py: Start the API server
-├─ aris_webui.py: Start the WebUI
-├─ confs: Configuration files
-│   ├─ deployment: For production environment
-│   └─ local: For local environment
-├─ envs: Environment variables
-│   ├─ deployment: For production environment
-│   └─ local: For local environment
-├─ docker: Container deployment files
-│   ├─ deployment: For production environment deployment
-│   └─ local: For local environment debugging (only start Mysql and Redis)
-├─ pages: streamlit pages
-│   ├─ chat.py: Dialogue interface
-│   └─ vector_db.py: Vector database operation interface
-├─ src: Internal modules
-│   ├─ deployment: For production environment
-│   └─ local: For local environment
-│   ├─ config: Read environment variables and configuration files
-│   ├─ logger: Log module
-│   ├─ api: API backend module  
-│   │   ├─ auth: Authentication module  
-│   │   ├─ model: API request & response model
-│   │   └─ router: API router
-│   │   │   ├─ v1: v1 version
-│   │   │   │   ├─ user: User router
-│   │   │   │   ├─ key: Key router
-│   │   │   │   ├─ session: Dialogue router
-│   │   │   │   ├─ vector_db: Vector database router
-│   │   │   │   └─ model: Model router
-│   │   │   │         ├─ llm: Large language model router
-│   │   │   │         └─ embedding: Word embedding model router
-│   │   │   └─ root: Root router (for health check)
-│   ├─ langchain: Langchain component
-│   │   ├─ callback.py: Callback (implement SSE)
-│   │   ├─ chain.py: Chain (implement Chat & RAG)
-│   │   ├─ memory.py: Context memory (implement sql backend and windows memory)
-│   │   ├─ prompt.py: Prompt (implement chat & RAG rompt template)
-│   │   ├─ embedding.py: Word embedding model
-│   │   ├─ llm.py: Large language model
-│   │   ├─ retriever: Vector database retrieval
-│   │   ├─ url_loader: Component for importing links
-│   │   ├─ file_loader: Component for importing files
-│   │   └─ text_splitter: Document chunking
-│   └─ webui: WebUI module
-├─ poetry.lock: Project dependencies
-└─ pyproject.toml: Project configuration
+.
+├── assets
+├── confs
+│   ├── deployment
+│   └── local
+├── docker
+│   ├── deployment
+│   └── local
+├── envs
+│   ├── deployment
+│   └── local
+├── kubernetes
+├── logs
+├── pages
+└── src
+    ├── api
+    │   ├── auth
+    │   ├── model
+    │   └── router
+    │       └── v1
+    │           ├── model
+    │           └── oauth2
+    ├── config
+    ├── langchain_aris
+    ├── logger
+    ├── middleware
+    │   ├── jwt
+    │   ├── logger
+    │   ├── mysql
+    │   │   └── models
+    │   └── redis
+    └── webui
 ```
 
 ## Local Deployment
@@ -179,6 +169,14 @@ streamlit run aris_webui.py
 ### Configure conf and env (As above)
 
 See the template file
+
+### Create Volumes
+
+```bash
+docker volume create mysql-data
+docker volume create redis-data
+docker volume create neo4j-data
+```
 
 ### Start the Container
 
