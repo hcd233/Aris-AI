@@ -2,8 +2,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple
 
+import tqdm
 from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
 from langchain_community.vectorstores.neo4j_vector import Neo4jVector, SearchType
+from langchain_core.documents import Document
 from langchain_openai.embeddings import OpenAIEmbeddings
 from sqlalchemy import or_
 
@@ -23,7 +25,7 @@ from ...model.response import StandardResponse
 vector_db_router = APIRouter(prefix="/vector-db", tags=["vector-db"])
 
 
-def _embedding_task(vector_db_id: int, documents: List[str], embedding: OpenAIEmbeddings) -> None:
+def _embedding_task(vector_db_id: int, documents: List[Document], embedding: OpenAIEmbeddings) -> None:
     logger.debug(f"Start async task: embedding {len(documents)} docs for vector_db_id: {vector_db_id}")
     try:
         node_label = f"knowledge_base:{vector_db_id}"
@@ -35,7 +37,12 @@ def _embedding_task(vector_db_id: int, documents: List[str], embedding: OpenAIEm
             search_type=SearchType.HYBRID,
             embedding=embedding,
         )
-        vector_db.add_documents(documents)
+        batch = max(0, len(documents) // 100) + 1
+        for i in tqdm.tqdm(range(0, len(documents), batch), desc="Embedding", unit="batch"):
+            docs = documents[i : i + batch]
+            vector_db.add_documents(docs)
+
+        vector_db.add_documents(documents[i + batch :])
     except Exception as e:
         logger.error(f"Error when embedding {len(documents)} docs for vector_db_id: {vector_db_id}, error: {e}")
     else:
