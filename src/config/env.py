@@ -8,6 +8,9 @@ LOGGER_ROOT = os.environ.get("LOGGER_ROOT", "./log")
 API_HOST = os.environ.get("API_HOST")
 API_PORT = int(os.environ.get("API_PORT", "8000"))
 
+OAUTH2_GITHUB_CLIENT_ID = os.environ.get("OAUTH2_GITHUB_CLIENT_ID")
+OAUTH2_GITHUB_CLIENT_SECRET = os.environ.get("OAUTH2_GITHUB_CLIENT_SECRET")
+
 MYSQL_DATABASE = os.environ.get("MYSQL_DATABASE")
 MYSQL_HOST = os.environ.get("MYSQL_HOST")
 MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")

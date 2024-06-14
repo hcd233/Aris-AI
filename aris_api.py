@@ -1,14 +1,14 @@
 import uvicorn
 
 from src.api import create_app
-from src.config import API_PORT
+from src.config import API_HOST, API_PORT
 
 
 def main() -> None:
     app = create_app()
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host=API_HOST,
         port=API_PORT,
         log_level="critical",
     )
