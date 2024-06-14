@@ -5,8 +5,14 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 
 from src.api.model.response import StandardResponse
-from src.config.env import OAUTH2_GITHUB_CLIENT_ID, OAUTH2_GITHUB_CLIENT_SECRET
-from src.config.gbl import OAUTH2_GITHUB_AUTH_URL, OAUTH2_GITHUB_REDIRECT_URL, OAUTH2_GITHUB_TOKEN_URL, OAUTH2_GITHUB_USER_API
+from src.config import (
+    OAUTH2_GITHUB_AUTH_URL,
+    OAUTH2_GITHUB_CLIENT_ID,
+    OAUTH2_GITHUB_CLIENT_SECRET,
+    OAUTH2_GITHUB_REDIRECT_URL,
+    OAUTH2_GITHUB_TOKEN_URL,
+    OAUTH2_GITHUB_USER_API,
+)
 
 from .common import login
 

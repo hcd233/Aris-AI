@@ -2,6 +2,8 @@ import os
 
 DEBUG_MODE = os.environ.get("DEBUG_MODE", "0") == "1"
 
+TMP_ROOT = os.environ.get("TMP_ROOT", "./tmp")
+
 LOGGER_LEVEL = os.environ.get("LOGGER_LEVEL", "INFO")
 LOGGER_ROOT = os.environ.get("LOGGER_ROOT", "./log")
 
@@ -21,10 +23,12 @@ REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 
+NEO4J_HOST = os.environ.get("NEO4J_HOST")
+NEO4J_PORT = int(os.environ.get("NEO4J_PORT", "7687"))
+NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD")
+
 JWT_TOKEN_SECRET = os.environ.get("JWT_TOKEN_SECRET")
 JWT_TOKEN_EXPIRE_TIME = eval(os.environ.get("JWT_TOKEN_EXPIRE_TIME", "3600"))
 JWT_TOKEN_ALGORITHM = os.environ.get("JWT_TOKEN_ALGORITHM", "HS256")
 
 API_KEY_EXPIRE_TIME = eval(os.environ.get("API_KEY_EXPIRE_TIME", "3600 * 24 * 30"))
-
-FAISS_ROOT = os.environ.get("FAISS_ROOT")
