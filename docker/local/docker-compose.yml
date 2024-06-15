@@ -42,7 +42,7 @@ services:
     volumes:
       - neo4j-data:/data
     healthcheck:
-      test: [ "bin/cypher-shell --format plain \"CALL dbms.cluster.overview()\"" ]
+      test: [ "CMD-SHELL", "bin/cypher-shell --format plain \"CALL dbms.cluster.overview()\"" ]
       interval: 5s
       retries: 10
     env_file:
