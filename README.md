@@ -6,7 +6,14 @@
 
 This is a project that provides **private large language model services**, aiming to quickly access general large models (GPT3.5, GPT4) and private models (Qwen1.5, ChatGLM3, LLama2, Baichuan2, etc.) services, providing a unified API interface. Relying on the langchain framework to provide multi-turn dialogue (Chat) and retrieval augmented generation (RAG) services, the project name comes from the character Aris in Blue Archive, as shown in the figure below
 
-![aris](./assets/110531412.jpg | width=256)
+---
+
+<p align="center">
+  <img src="./assets/110531412.jpg" width="50%">
+  <br>Aris: Blue Archive 中的角色
+</p>
+
+---
 
 ## Change Log
 

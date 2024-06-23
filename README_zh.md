@@ -6,7 +6,14 @@
 
 这是一个提供**私有化大语言模型服务**的项目，目的是为了快速接入通用大模型(GPT3.5、GPT4)和私有模型(Qwen1.5、ChatGLM3、LLama2、Baichuan2等)服务，提供统一的API接口。依托langchain框架提供多轮对话（Chat）和检索增强生成（RAG）服务，项目名来源于Blue Archive中的角色Aris，如下图
 
-![aris](./assets/110531412.jpg | width=256)
+---
+
+<p align="center">
+  <img src="./assets/110531412.jpg" width="50%">
+  <br>Aris: Blue Archive 中的角色
+</p>
+
+---
 
 ## 更新日志
 
