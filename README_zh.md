@@ -6,9 +6,11 @@
 
 这是一个提供**私有化大语言模型服务**的项目，目的是为了快速接入通用大模型(GPT3.5、GPT4)和私有模型(Qwen1.5、ChatGLM3、LLama2、Baichuan2等)服务，提供统一的API接口。依托langchain框架提供多轮对话（Chat）和检索增强生成（RAG）服务，项目名来源于Blue Archive中的角色Aris，如下图
 
-![](./assets/110531412.jpg)
+![aris](./assets/110531412.jpg | width=256)
 
 ## 更新日志
+
+- [2024-06-23] 我们发布了[Aris-14B-Chat系列模型](https://huggingface.co/collections/Aris-AI/aris-chat-arcturus-6642fd11069310a4467db222)，该模型基于[Qwen1.5-14B-Chat](https://huggingface.co/Qwen/Qwen1.5-14B-Chat)在我们的140K条私有数据集进行了SFT和DPO。在使用该模型时,请遵守Qwen开源协议。
 
 - [2024-06-15] 使用Neo4j作为存储知识库的数据库
 
