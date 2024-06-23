@@ -6,10 +6,7 @@
 
 This is a project that provides **private large language model services**, aiming to quickly access general large models (GPT3.5, GPT4) and private models (Qwen1.5, ChatGLM3, LLama2, Baichuan2, etc.) services, providing a unified API interface. Relying on the langchain framework to provide multi-turn dialogue (Chat) and retrieval augmented generation (RAG) services, the project name comes from the character Aris in Blue Archive, as shown in the figure below
 
-<div style="text-align: center;">
-  <img src="assets/110531412.jpg" style="width: 50%;" />
-</div>
-
+![](./assets/110531412.jpg)
 ## Change Log
 
 - [2024-06-15] Use Neo4j as the database for storing knowledge bases
