@@ -17,6 +17,8 @@ This is a project that provides **private large language model services**, aimin
 
 ## Change Log
 
+- [2024-07-13] We open source the [Aris-AI-Model-Server](https//github.com/hcd233/Aris-AI-Model-Server), which integrates LLM, Embedding and Reranker deployment services, and provides an OpenAI Compatible API interface to facilitate users to deploy private models.
+
 - [2024-06-23] We release the [Aris-14B-Chat Series Model](https://huggingface.co/collections/Aris-AI/aris-chat-arcturus-6642fd11069310a4467db222) which sft and dpo by [Qwen1.5-14B-Chat](https://huggingface.co/Qwen/Qwen1.5-14B-Chat) on our private dataset. Please obey the qwen open source agreement while using it.
 
 - [2024-06-15] Use Neo4j as the database for storing knowledge bases
