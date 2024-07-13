@@ -17,7 +17,7 @@ This is a project that provides **private large language model services**, aimin
 
 ## Change Log
 
-- [2024-07-13] We open source the [Aris-AI-Model-Server](https//github.com/hcd233/Aris-AI-Model-Server), which integrates LLM, Embedding and Reranker deployment services, and provides an OpenAI Compatible API interface to facilitate users to deploy private models.
+- [2024-07-13] We open source the [Aris-AI-Model-Server](https://github.com/hcd233/Aris-AI-Model-Server), which integrates LLM, Embedding and Reranker deployment services, and provides an OpenAI Compatible API interface to facilitate users to deploy private models.
 
 - [2024-06-23] We release the [Aris-14B-Chat Series Model](https://huggingface.co/collections/Aris-AI/aris-chat-arcturus-6642fd11069310a4467db222) which sft and dpo by [Qwen1.5-14B-Chat](https://huggingface.co/Qwen/Qwen1.5-14B-Chat) on our private dataset. Please obey the qwen open source agreement while using it.
 
@@ -203,7 +203,7 @@ docker-compose -f docker/deployment/docker-compose.yml up -d --no-build
 #### Model Operation
 
 1. Call the general large model service, which currently only supports the OpenAI series models (or agents with OpenAI-like interfaces). You can access it directly in the API. You need to store information such as base, key, max_tokens in the database, and you can customize the System prompt
-2. Call the private model service, please deploy the model as an API service with an OpenAI-like API (such as [llama-cpp-python](https://github.com/abetlen/llama-cpp-python)), and then follow the first The operation of the article can be done
+2. Call the private model service, please deploy the model as an API service with an OpenAI-like API (you can use [Aris-AI-Model-Server](https://github.com/hcd233/Aris-AI-Model-Server)), and configure it accordingly.
 
 ## Project Outlook
 
