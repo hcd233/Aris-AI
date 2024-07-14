@@ -9,7 +9,7 @@ This is a project that provides **private large language model services**, aimin
 ---
 
 <p align="center">
-  <img src="assets/110531412.jpg" width="50%">
+  <img src="https://raw.githubusercontent.com/hcd233/Aris-AI/master/assets/110531412.jpg" width="50%">
   <br>Aris: Blue Archive 中的角色
 </p>
 
